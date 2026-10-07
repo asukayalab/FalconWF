@@ -172,7 +172,7 @@
     "package": "theme",
     "path": "front-page.php",
     "loaded_by": "WordPress front page template hierarchy",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "proof": "tests/project.test.mjs (template hierarchy, robots, public/password metadata); tests/frontend.test.mjs; tests/runtime-package.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-theme/functions.php",
@@ -200,14 +200,14 @@
     "package": "theme",
     "path": "inc/data.php",
     "loaded_by": "functions.php / header/footer",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "proof": "tests/project.test.mjs (template hierarchy, robots, public/password metadata); tests/frontend.test.mjs; tests/runtime-package.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-theme/inc/setup.php",
     "package": "theme",
     "path": "inc/setup.php",
     "loaded_by": "functions.php",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "proof": "tests/project.test.mjs (template hierarchy, robots, public/password metadata); tests/frontend.test.mjs; tests/runtime-package.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-theme/index.php",

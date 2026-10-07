@@ -1,6 +1,6 @@
 # Falcon WF 0.1
 
-Framework WordPress modular milik Asukayalab. Build pengembangan lokal **0.1.0-alpha.2**; belum rilis stable Falcon WF 0.1. Lihat `engineering/STATUS.md` untuk gate yang belum lengkap.
+Framework WordPress modular milik Asukayalab. Build pengembangan lokal **0.1.0-alpha.3**; belum rilis stable Falcon WF 0.1. Lihat `engineering/STATUS.md` untuk gate yang belum lengkap.
 
 - `docs/Falcon-WF-0.1/`: 23 dokumen referensi FWF-00 sampai FWF-22, disimpan lokal dan dikecualikan dari Git.
 - `session-notes/`: seluruh catatan sesi baru dan laporan hasil sesi, disimpan terpisah dari dokumen referensi dan dikecualikan dari Git.
@@ -31,7 +31,7 @@ Untuk clone yang memakai database volume lokal lama, salin `local/.env` lama lan
 
 Preview: http://localhost:8091. Admin: http://localhost:8091/wp-admin, user `fwf-admin`; password dibuat di `local/.env` pada `FWF_ADMIN_PASSWORD` dan tidak dicetak ke terminal. `npm run local:down` menghentikan service tanpa menghapus database/volume. Tidak ada reset/purge otomatis.
 
-Installer: `dist/falcon-wf-0.1.0-alpha.2.zip`. Upload lewat Plugins, aktifkan FP, buka menu Falcon WF, pasang FT bundled, kemudian pilih aktivasi bila diinginkan. Jangan unggah ZIP dokumen. Model filesystem awal direct writable; immutable diblokir dengan arahan pipeline.
+Installer: `dist/falcon-wf-0.1.0-alpha.3.zip`. Upload lewat Plugins, aktifkan FP, buka menu Falcon WF, pasang FT bundled, kemudian pilih aktivasi bila diinginkan. Jangan unggah ZIP dokumen. Model filesystem awal direct writable; immutable diblokir dengan arahan pipeline.
 
 ## AI dan private release
 
@@ -56,3 +56,5 @@ Human edit tetap dapat mempertahankan status publikasi yang valid. Agent tetap d
 Header FT mengambil Judul Situs dan Tagline dari Settings → General WordPress. Identitas proyek Falcon tidak lagi menimpa judul tersebut. Footer menautkan Asukayalab sesuai arahan produk.
 
 Panduan distribusi/update: [guides/UPDATES.md](guides/UPDATES.md). Tag prerelease dipilih eksplisit hanya pada local/staging; stable tetap default. Kontrak paket desain klien: [engineering/PROJECT-PACKAGES.md](engineering/PROJECT-PACKAGES.md), installer proyek belum tersedia.
+
+Contoh paket desain klien lokal: [Falcon Reference](examples/projects/falcon-reference/README.md). Build terpisah dengan `npm run build:project`; theme contoh tidak ikut installer FP/FT dan tidak diaktifkan otomatis.

@@ -36,7 +36,8 @@ if (action === 'setup') {
     const env = Object.fromEntries(readFileSync(envFile,'utf8').trim().split('\n').map(l=>l.split('=')));
     const probe = spawnSync('docker',['compose','--env-file',envFile,'-f',path.join(root,'local/compose.yml'),'run','--rm','cli','wp','core','is-installed'],{cwd:root,stdio:'ignore'});
     if (probe.status !== 0) run(['run','--rm','cli','wp','core','install','--url=http://localhost:8091','--title=Falcon WF Local','--admin_user=fwf-admin',`--admin_password=${env.FWF_ADMIN_PASSWORD}`,'--admin_email=local@example.invalid','--skip-email']);
-    const {version} = JSON.parse(readFileSync(path.join(root,'release/components.json')));
+    const {versions} = JSON.parse(readFileSync(path.join(root,'release/components.json')));
+    const version=versions['falcon-wf'];
     run(['run','--rm','cli','wp','plugin','install',`/artifacts/falcon-wf-${version}.zip`,'--activate','--force']);
   } else if (action === 'test-state-recovery') {
     withSiteState(()=>run(['run','--rm','cli','wp','eval-file','/fwf-tests/state-failure.php']));
@@ -44,15 +45,17 @@ if (action === 'setup') {
     const guardCheck=spawnSync(process.execPath,['tests/harness.test.mjs'],{cwd:root,stdio:'inherit'});
     if (guardCheck.status!==0) throw new Error('State recovery regression failed.');
     withSiteState(()=>{
+      run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/lint.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/update-policy.php']);
       for (const file of ['integration.php','content.php','builder.php','native-save.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
-      for (const test of ['tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs']) {
+      for (const test of ['tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
         const r=spawnSync(process.execPath,[test],{cwd:root,stdio:'inherit'});
         if(r.status!==0) throw new Error(`Integration check failed: ${test} (exit ${r.status ?? 1}).`);
       }
+      run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
     });
   }
   else throw new Error('Unknown local command.');

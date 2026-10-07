@@ -1,4 +1,5 @@
 """Create a source-only handoff ZIP. Runtime installers remain in dist/."""
+import json
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -27,7 +28,8 @@ for name in files:
         raise RuntimeError('Source export refused: local credential found in selected source')
 output = root / 'local/artifacts/github-upload'
 output.mkdir(parents=True, exist_ok=True)
-archive_path = output / 'FalconWF-source-alpha.2.zip'
+version = json.loads((root / 'release/components.json').read_text())['version']
+archive_path = output / f'FalconWF-source-{version}.zip'
 with ZipFile(archive_path, 'w', ZIP_DEFLATED) as archive:
     for name in files:
         archive.write(root / name, 'FalconWF/' + name)

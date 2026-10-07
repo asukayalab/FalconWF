@@ -46,7 +46,7 @@ try {
  content_ok(!is_wp_error($installer->readiness()),'local preflight bundle/permissions/disk passes');
  $manifestPath=WP_PLUGIN_DIR.'/falcon-wf/installer-manifest.json';$bundlePath=WP_PLUGIN_DIR.'/falcon-wf/bundles/falcon-theme.zip';$manifestBytes=file_get_contents($manifestPath);$zipBytes=file_get_contents($bundlePath);
  try {
-  $z=new ZipArchive();$temp=wp_tempnam('attack.zip');$z->open($temp,ZipArchive::OVERWRITE);$z->addFromString('falcon-theme/../escape.php','<?php');$z->addFromString('falcon-theme/style.css',"Version: 0.1.0-alpha.2\n");$z->addFromString('falcon-theme/index.php','<?php');$z->close();
+  $z=new ZipArchive();$temp=wp_tempnam('attack.zip');$z->open($temp,ZipArchive::OVERWRITE);$z->addFromString('falcon-theme/../escape.php','<?php');$z->addFromString('falcon-theme/style.css',"Version: ".json_decode($manifestBytes,true)['theme']['version']."\n");$z->addFromString('falcon-theme/index.php','<?php');$z->close();
   copy($temp,$bundlePath);$manifest=json_decode($manifestBytes,true);$manifest['theme']['sha256']=hash_file('sha256',$bundlePath);file_put_contents($manifestPath,wp_json_encode($manifest));
   content_ok(is_wp_error(FalconWF\Packages\Verifier::bundle(WP_PLUGIN_DIR.'/falcon-wf')),'hash-valid traversal ZIP refused before extraction');unlink($temp);
  } finally {file_put_contents($manifestPath,$manifestBytes);file_put_contents($bundlePath,$zipBytes);}

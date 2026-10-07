@@ -4,7 +4,7 @@ if (wp_get_environment_type()!=='local') { throw new RuntimeException('Local onl
 global $wpdb;
 $mode=$args[0]??''; $owner=$args[1]??''; $key='fwf_test_site_state';
 if (!is_string($owner) || !preg_match('/^[a-f0-9-]{36}$/D',$owner)) { throw new RuntimeException('Snapshot owner required.'); }
-$names=['blogname','blogdescription','home','siteurl','stylesheet','template','active_plugins','rewrite_rules'];
+$names=['blogname','blogdescription','home','siteurl','stylesheet','template','active_plugins','rewrite_rules','blog_public','show_on_front','page_on_front','page_for_posts','current_theme','theme_switched','theme_mods_falcon-reference','theme_mods_falcon-theme'];
 $select=static function () use ($wpdb,$names,$key) {
     $rows=$wpdb->get_results($wpdb->prepare("SELECT option_name,option_value,autoload FROM {$wpdb->options} WHERE option_name LIKE %s",$wpdb->esc_like('fwf_').'%'),ARRAY_A);
     foreach ($names as $name) { $row=$wpdb->get_row($wpdb->prepare("SELECT option_name,option_value,autoload FROM {$wpdb->options} WHERE option_name=%s",$name),ARRAY_A); if ($row) { $rows[]=$row; } }

@@ -5,7 +5,7 @@ function identity(): array {
 }
 function siteName(): string { return get_bloginfo('name'); }
 function contentDetails(int $id): void {
-    if (!class_exists('FalconWF\\Content\\Schema')) { return; }
+    if (post_password_required($id) || !class_exists('FalconWF\\Content\\Schema')) { return; }
     $type=get_post_type($id); $definitions=\FalconWF\Content\Schema::custom($type); $values=\FalconWF\Content\Schema::values($id,$type);
     if (!$definitions) { return; }
     if (($definitions['cover_image']['public']??true) && ($values['cover_image']??0)) { echo wp_get_attachment_image($values['cover_image'],'large',false,['class'=>'entry-cover']); }

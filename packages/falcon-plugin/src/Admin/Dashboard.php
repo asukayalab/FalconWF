@@ -53,7 +53,7 @@ final class Dashboard {
         if ($notice) { delete_transient('fwf_notice_'.get_current_user_id()); echo '<div role="status" class="notice notice-'.($notice['ok']?'success':'error').'"><p>'.esc_html($notice['text']).'</p></div>'; }
         switch ($page) {
             case 'overview':
-                echo '<p>Build pengembangan 0.1.0-alpha.2. Kelulusan rilis 0.1 belum lengkap.</p><dl>';
+                echo '<p>Build pengembangan @@PRODUCT_VERSION@@. Kelulusan rilis 0.1 belum lengkap.</p><dl>';
                 foreach (Health::report() as $key=>$value) { echo '<dt>'.esc_html($key).'</dt><dd>'.esc_html(is_bool($value)?($value?'Ya':'Tidak'):(string)$value).'</dd>'; }
                 echo '</dl>'; $this->setup(); break;
             case 'identity':

@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini `0.1.0-alpha.2`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini `0.1.0-alpha.3`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -61,3 +61,12 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Apply mengambil ulang metadata dan menuntut paket sama dengan kandidat yang telah diperiksa; metadata/tag/connection berubah memerlukan check/review ulang.
 - Plugin self-update menggunakan WP Plugin_Upgrader bulk path dengan satu target agar status aktif dipertahankan; jalur upgrade tunggal yang menonaktifkan plugin diganti. Tidak menambahkan handler update paralel atau aktivasi ulang otomatis.
 - Pengujian tetap Docker lokal sesuai pilihan user. GitHub metadata/download fixture bukan live acceptance. Kontrak paket klien di PROJECT-PACKAGES.md; installer proyek dan global design/SEO tetap tahap berikutnya.
+
+## Contoh proyek dan versi komponen — 7 Oktober 2026
+
+- Falcon Reference adalah contoh generik lokal, source/inventory di examples/projects/falcon-reference; tidak mengklaim desain Rizal atau membuat repo klien. Build terpisah menghasilkan ZIP delapan file runtime dan project manifest di dist/projects; tidak dibundel ke FP/FT.
+- release/components.json memiliki versi rilis produk dan map versi FP/FT. Build memasukkan token header/API/dashboard, installer manifest serta artifact dari versi yang tepat. Metadata npm/lock disinkronkan dan diperiksa. Tes build terisolasi memakai versi FT berbeda untuk membuktikan tidak terikat versi FP/produk.
+- Parent template fallback coming-soon memasang filter robots hanya saat template tersebut dirender. Child front page tetap mengikuti WP site visibility. contentDetails FT menjadi satu boundary penolakan metadata ketika password post belum terbuka, termasuk consumer parent dan child.
+- Home memakai Page statis yang dipilih manusia atau site title/tagline saat latest-posts. Listing home memakai shortcode FP yang sudah ada; archive memakai main query publish/password-free dan pagination. Tidak mengubah homepage, membuat konten demo atau mengaktifkan child pada instalasi pengguna otomatis.
+- Design tokens CSS per contoh mengatur font judul/body, warna, spacing dan skala heading. System fonts tidak mengirim request font eksternal. Form pengaturan global serta owner metadata SEO lanjutan tetap pekerjaan berikutnya.
+- Test fixture memilih child sementara hanya di Docker lalu restore options, konten fixture dan file child lama. Instalasi contoh sesudah pengujian hanya untuk Live Preview, tanpa Activate & Publish. Batas kompatibilitas minimum parent alpha.3 karena helper password dan robots sudah diperbaiki di versi tersebut.

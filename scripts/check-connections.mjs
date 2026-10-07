@@ -1,6 +1,10 @@
 import {existsSync,readFileSync,readdirSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+const components=JSON.parse(readFileSync('release/components.json'));
+assert.equal(JSON.parse(readFileSync('package.json')).version,components.version);
+assert.equal(JSON.parse(readFileSync('package-lock.json')).version,components.version);
+for(const id of ['falcon-wf','falcon-theme'])assert.match(components.versions[id],/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.[1-9]\d*)?$/);
 const inventory=JSON.parse(readFileSync('release/inventory.json'));
 const seen=new Set();
 for (const i of inventory) {

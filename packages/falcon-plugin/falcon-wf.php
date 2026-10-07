@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Falcon WF
  * Description: Fondasi WordPress modular Asukayalab: konten, installer, izin dan konektor AI.
- * Version: 0.1.0-alpha.2
+ * Version: @@PLUGIN_VERSION@@
  * Requires at least: 6.7
  * Requires PHP: 8.3
  * Author: Asukayalab

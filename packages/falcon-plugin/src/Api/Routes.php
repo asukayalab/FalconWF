@@ -31,7 +31,7 @@ final class Routes {
         if ($method==='notifications/initialized' && !isset($p['id'])) { return new \WP_REST_Response(null,202); }
         if (!isset($p['id']) || (!is_int($id) && !is_string($id))) { return $this->rpcError(null,-32600,'Request ID diperlukan.'); }
         $result=match ($method) {
-            'initialize'=>['protocolVersion'=>'2025-03-26','capabilities'=>['tools'=>['listChanged'=>false]],'serverInfo'=>['name'=>'Falcon WF','version'=>'0.1.0-alpha.2']],
+            'initialize'=>['protocolVersion'=>'2025-03-26','capabilities'=>['tools'=>['listChanged'=>false]],'serverInfo'=>['name'=>'Falcon WF','version'=>'@@PLUGIN_VERSION@@']],
             'ping'=>[],
             'tools/list'=>['tools'=>$this->definitions()],
             'tools/call'=>$this->invoke($p['params']??[]),

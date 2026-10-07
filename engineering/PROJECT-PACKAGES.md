@@ -1,6 +1,6 @@
 # Kontrak paket proyek klien
 
-Status: kontrak tahap implementasi berikutnya; installer/updater proyek belum tersedia. Tidak menambah repo klien atau koneksi production tanpa owner/target.
+Status: contoh child theme generik lokal dan build terpisah tersedia di examples/projects/falcon-reference. Installer/updater repo proyek belum tersedia. Tidak menambah repo klien atau koneksi production tanpa owner/target.
 
 ## Pemisahan
 
@@ -27,8 +27,8 @@ Repo dan credential reference proyek terpisah dari fwf_repo/FWF_GITHUB_TOKEN cor
 
 FT/child theme menghasilkan HTML semantic dan heading. Satu owner metadata SEO menangani title/description/canonical/structured data/robots; integrasi plugin SEO harus mencegah duplikasi, bukan memasang dua generator bersamaan. Sitemap WP dimanfaatkan sebelum menambah generator. Structured data mencerminkan isi yang benar-benar terlihat.
 
-Coming-soon beranda harus noindex, sedangkan beranda final mengikuti pengaturan indeks/launch. Filter FT saat ini masih menandai semua front page noindex; koreksi dan regresi template hierarchy diperlukan sebelum launch. Belum ada janji SEO/GEO selesai atau jaminan ranking/citation AI.
+Coming-soon beranda harus noindex, sedangkan beranda final mengikuti pengaturan indeks/launch. Alpha.3 membatasi filter noindex ke template coming-soon yang benar-benar dirender; child front page mengikuti kebijakan visibility WordPress. Helper field FT juga menolak metadata saat password belum dibuka. Regresi guest/index/template hierarchy ada di tests/project.test.mjs. Belum ada janji SEO/GEO selesai atau jaminan ranking/citation AI.
 
 ## Batas penerimaan
 
-Kontrak ini belum merupakan bukti pemasangan paket klien. Contoh generik lokal boleh dipakai untuk runtime proof; jangan mengklaim acceptance Rizal atau klien tertentu tanpa bahan dan review. Semua pekerjaan tetap melewati verify/integration; Q06/Q07 AI live wajib 0.1 dan tidak digantikan pekerjaan desain.
+Contoh generik dipasang/dipilih sementara dalam fixture Docker, diuji lalu dipulihkan. Ini belum merupakan bukti installer repo klien atau live acceptance klien. Contoh generik lokal boleh dipakai untuk runtime proof; jangan mengklaim acceptance Rizal atau klien tertentu tanpa bahan dan review. Semua pekerjaan tetap melewati verify/integration; Q06/Q07 AI live wajib 0.1 dan tidak digantikan pekerjaan desain.

@@ -1,0 +1,35 @@
+import {readFileSync, writeFileSync, mkdirSync, rmSync, lstatSync, readdirSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import assert from 'node:assert/strict';
+process.chdir(fileURLToPath(new URL('../',import.meta.url)));
+const source='examples/projects/falcon-reference';
+const spec=JSON.parse(readFileSync(`${source}/project.json`));
+assert.equal(spec.schema,1);assert.equal(spec.project_id,'falcon-reference');
+assert.equal(spec.package.id,spec.project_id);assert.equal(spec.package.type,'theme');assert.equal(spec.package.parent,'falcon-theme');
+assert.match(spec.version,/^\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/);assert.equal(spec.status,'development');
+assert(Array.isArray(spec.runtime) && new Set(spec.runtime).size===spec.runtime.length);
+const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+const build='build/projects/falcon-reference',output='dist/projects';
+rmSync(build,{recursive:true,force:true});mkdirSync(build,{recursive:true});mkdirSync(output,{recursive:true});
+const inputs=[{source:`${source}/project.json`,sha256:hash(readFileSync(`${source}/project.json`))}];
+for(const relative of spec.runtime){
+ assert(typeof relative==='string' && !path.isAbsolute(relative) && !relative.includes('..') && !relative.includes('\\'));
+ assert(/\.(php|css)$/.test(relative));const file=path.join(source,relative);assert(lstatSync(file).isFile() && !lstatSync(file).isSymbolicLink());
+ const original=readFileSync(file);let bytes=original.toString('utf8').replaceAll('@@PROJECT_VERSION@@',spec.version);assert(!bytes.includes('@@PROJECT_'));
+ const target=path.join(build,relative);mkdirSync(path.dirname(target),{recursive:true});writeFileSync(target,bytes);
+ inputs.push({source:file,path:relative,sha256:hash(original)});
+}
+const walk=folder=>readdirSync(folder,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(folder,e.name)):[path.join(folder,e.name)]);
+const runtime=walk(source).filter(file=>/\.(php|css)$/.test(file)).map(file=>path.relative(source,file));
+assert.deepEqual(runtime.sort(),[...spec.runtime].sort(),'All runtime sources must be mapped');
+const style=readFileSync(`${build}/style.css`,'utf8');assert(style.includes(`Template: ${spec.package.parent}`) && style.includes(`Version: ${spec.version}`));
+const artifact=`${spec.package.id}-${spec.version}.zip`;
+const zipped=spawnSync('python3',['scripts/zip.py',build,`${output}/${artifact}`,spec.package.id],{stdio:'inherit'});if(zipped.status!==0)throw Error('Project ZIP failed');
+const commit=spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8'}),dirty=spawnSync('git',['status','--porcelain'],{encoding:'utf8'});
+const manifest={schema:1,project_id:spec.project_id,status:spec.status,source_commit:commit.status===0?commit.stdout.trim():null,dirty:dirty.status!==0 || !!dirty.stdout.trim(),source_digest:hash(JSON.stringify(inputs)),packages:[{...spec.package,version:spec.version,artifact,sha256:hash(readFileSync(`${output}/${artifact}`)),min_wp:spec.min_wp,min_php:spec.min_php,compatibility:spec.compatibility}]};
+writeFileSync(`${output}/project-manifest.json`,JSON.stringify(manifest,null,2)+'\n');
+writeFileSync(`${output}/build-report.json`,JSON.stringify({inputs,acceptance:'Local reference only; client installer and private distribution pending.'},null,2)+'\n');
+console.log(`Built local reference: ${output}/${artifact}`);
