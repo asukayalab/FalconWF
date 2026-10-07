@@ -42,7 +42,7 @@ writeFileSync('build/plugin/installer-manifest.json',JSON.stringify({schema:1,id
 zip('build/plugin',`dist/${fp}`,'falcon-wf');
 const commit=spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8'});
 const dirty=spawnSync('git',['status','--porcelain'],{encoding:'utf8'});
-const manifest={schema:1,product:components.product,status:components.release_status,source_commit:commit.status===0?commit.stdout.trim():null,dirty:!!dirty.stdout.trim(),source_digest:hash(JSON.stringify(inputs)),built_at:new Date().toISOString(),packages:[
+const manifest={schema:1,product:components.product,version:components.version,status:components.release_status,source_commit:commit.status===0?commit.stdout.trim():null,dirty:!!dirty.stdout.trim(),source_digest:hash(JSON.stringify(inputs)),built_at:new Date().toISOString(),packages:[
   {id:'falcon-wf',type:'plugin',version:components.version,artifact:fp,sha256:hash(readFileSync(`dist/${fp}`)),min_wp:components.min_wp,min_php:components.min_php},
   {id:'falcon-theme',type:'theme',version:components.version,artifact:ft,sha256:themeHash,min_wp:components.min_wp,min_php:components.min_php}
 ]};

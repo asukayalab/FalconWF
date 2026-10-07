@@ -4,6 +4,7 @@ use FalconWF\Modules\Registry;
 use FalconWF\Packages\Lock;
 use FalconWF\Audit\Logger;
 final class Repository {
+    private array $nativeWrites = [];
     public function __construct(private Registry $registry) {}
     public function types(): array { return $this->registry->types(); }
     public function get(int $id): array|\WP_Error {
@@ -25,6 +26,69 @@ final class Repository {
     }
     public static function metadataRevision(int $id,string $type): string {
         return hash('sha256',wp_json_encode([Schema::custom($type),Schema::values($id,$type)]));
+    }
+    public static function nativeRevision(int $id): string {
+        $post=get_post($id);
+        return hash('sha256',wp_json_encode([$post?->to_array(),$post?self::metadataRevision($id,$post->post_type):null]));
+    }
+    /** Reserve the schema and object before WordPress can write the native form. */
+    public function prepareNative(int $id,string $metaRevision,string $nativeRevision,array $fields): true|\WP_Error {
+        if (isset($this->nativeWrites[$id])) { return true; }
+        if (!current_user_can('edit_post',$id) || in_array('fwf_agent',(array)wp_get_current_user()->roles,true)) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }
+        $builder=Lock::acquire('builder'); if (is_wp_error($builder)) { return $builder; }
+        $owner=Lock::acquire('content_'.$id);
+        if (is_wp_error($owner)) { Lock::release('builder',$builder); return $owner; }
+        $this->nativeWrites[$id]=['owner'=>$owner,'builder'=>$builder,'staged'=>false];
+        $post=get_post($id);
+        $error=null;
+        if (!$post || !Schema::custom($post->post_type)) { $error=new \WP_Error('FWF_NOT_FOUND','Field tidak tersedia.'); }
+        elseif (!hash_equals(self::metadataRevision($id,$post->post_type),$metaRevision) || !hash_equals(self::nativeRevision($id),$nativeRevision)) {
+            $error=new \WP_Error('FWF_CONFLICT','Konten, field atau definisi berubah. Muat ulang editor sebelum menyimpan.');
+        } else {
+            foreach (Schema::custom($post->post_type) as $key=>$definition) {
+                if (!array_key_exists($key,$fields)) { $error=new \WP_Error('FWF_VALIDATION','Field belum dikirim: '.$definition['label']); break; }
+            }
+            if (!$error && array_diff(array_keys($fields),array_keys(Schema::custom($post->post_type)))) { $error=new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
+            if (!$error) {
+                $data=Schema::validate($fields,$post->post_type);
+                if (is_wp_error($data)) { $error=$data; }
+                else { $this->nativeWrites[$id]['meta']=$data['meta']; }
+            }
+        }
+        if ($error) { $this->cancelNative($id); return $error; }
+        return true;
+    }
+    /** Persist validated metadata before a native status transition can publish. */
+    public function stageNative(int $id): true|\WP_Error {
+        if (!isset($this->nativeWrites[$id])) { return new \WP_Error('FWF_CONTRACT','Penyimpanan belum diperiksa.'); }
+        if ($this->nativeWrites[$id]['staged']) { return true; }
+        $audit=Logger::write('content_native','started',$id); if (is_wp_error($audit)) { $this->cancelNative($id); return $audit; }
+        $result=$this->saveMeta($id,$this->nativeWrites[$id]['meta']);
+        if (is_wp_error($result)) { $this->cancelNative($id); return $result; }
+        $this->nativeWrites[$id]['staged']=true;
+        return true;
+    }
+    public function completeNative(int $id): void {
+        if (empty($this->nativeWrites[$id]['staged'])) { return; }
+        try {
+            wp_save_post_revision($id);
+            $audit=Logger::write('content_native','succeeded',$id);
+            if (is_wp_error($audit)) { set_transient('fwf_fields_notice_'.get_current_user_id(),'Konten tersimpan, tetapi audit final gagal. Periksa sebelum mencoba lagi.',120); }
+        } finally { $this->cancelNative($id); }
+    }
+    public function cancelNative(int $id): void {
+        if (!isset($this->nativeWrites[$id])) { return; }
+        $write=$this->nativeWrites[$id]; unset($this->nativeWrites[$id]);
+        Lock::release('content_'.$id,$write['owner']); Lock::release('builder',$write['builder']);
+    }
+    public function closeNativeWrites(): void {
+        foreach ($this->nativeWrites as $id=>$write) {
+            if ($write['staged']) {
+                Logger::write('content_native','incomplete',$id);
+                set_transient('fwf_fields_notice_'.get_current_user_id(),'Penyimpanan utama belum selesai. Sebagian field mungkin tersimpan; periksa konten sebelum mencoba lagi.',120);
+            }
+            $this->cancelNative($id);
+        }
     }
     public function saveFields(int $id,string $expected,array $fields): true|\WP_Error {
         if (!current_user_can('edit_post',$id) || in_array('fwf_agent',(array)wp_get_current_user()->roles,true)) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }

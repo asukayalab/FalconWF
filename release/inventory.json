@@ -80,8 +80,8 @@
     "source": "packages/falcon-plugin/src/Content/Repository.php",
     "package": "plugin",
     "path": "src/Content/Repository.php",
-    "loaded_by": "Bootstrap / REST / AgentTools / ProviderClient",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "loaded_by": "Bootstrap / ContentEditor native writer locks and metadata staging / REST / AgentTools / ProviderClient",
+    "proof": "tests/native-save.php; tests/content.php; tests/admin.test.mjs; tests/mcp.test.mjs; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-plugin/src/Content/Schema.php",
@@ -235,14 +235,14 @@
     "package": "plugin",
     "path": "src/Updates/GitHubClient.php",
     "loaded_by": "Dashboard check/apply release -> UpdateManager -> GitHubClient",
-    "proof": "tests/integration.php; private GitHub acceptance pending"
+    "proof": "tests/update.php (WP plugin/theme upgrader, mocked GitHub); tests/update-policy.php; tests/admin.test.mjs; private GitHub acceptance pending"
   },
   {
     "source": "packages/falcon-plugin/src/Updates/UpdateManager.php",
     "package": "plugin",
     "path": "src/Updates/UpdateManager.php",
     "loaded_by": "Dashboard check/apply release -> UpdateManager -> GitHubClient",
-    "proof": "tests/integration.php; private GitHub acceptance pending"
+    "proof": "tests/update.php (WP plugin/theme upgrader, mocked GitHub); tests/update-policy.php; tests/admin.test.mjs; private GitHub acceptance pending"
   },
   {
     "source": "packages/falcon-plugin/src/Migrations/Runner.php",
@@ -255,8 +255,8 @@
     "source": "packages/falcon-plugin/src/Admin/ContentEditor.php",
     "package": "plugin",
     "path": "src/Admin/ContentEditor.php",
-    "loaded_by": "Bootstrap / Dashboard content -> human fields action",
-    "proof": "tests/content.php; tests/admin.test.mjs"
+    "loaded_by": "Bootstrap -> native metabox/classic preflight -> early insert/update guard; native REST pre-insert; scheduled publish guard",
+    "proof": "tests/native-save.php; tests/admin.test.mjs; tests/builder.php; tests/content.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-plugin/src/Content/Definitions.php",

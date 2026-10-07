@@ -8,7 +8,7 @@ cli('builder-fixture.php','snapshot');
 function session(){
  const cookies=new Map();
  return async (path,params={})=>{
-   const r=await fetch(base+path,{...params,redirect:'manual',headers:{...params.headers,'Cookie':[...cookies].map(([k,v])=>`${k}=${v}`).join('; ')}});
+   const r=await fetch(base+path,{...params,redirect:'manual',headers:{...params.headers,'Connection':'close','Cookie':[...cookies].map(([k,v])=>`${k}=${v}`).join('; ')}});
    for(const header of r.headers.getSetCookie()){const part=header.split(';')[0];const index=part.indexOf('=');cookies.set(part.slice(0,index),part.slice(index+1));}
    return {status:r.status,location:r.headers.get('location'),body:await r.text()};
  };
@@ -19,6 +19,15 @@ try{
  const admin=await login(fixtures.administrator);
  const screens=['','-content','-identity','-modules','-connections','-ai','-updates','-maintenance','-audit'];
  for(const screen of screens){const r=await admin('/wp-admin/admin.php?page=falcon-wf'+screen);ok(r.status===200 && r.body.includes('class="wrap fwf"') && !r.body.includes('Fatal error'),'admin screen '+(screen||'overview')+' renders');}
+ const connections=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
+ ok(connections.body.includes('name="release_tag"') && connections.body.includes('local/staging') && !connections.body.match(/<input[^>]*name="release_tag"[^>]*required/),'release connection explains and renders pinned prerelease field');
+ const repoNonce=connections.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];
+ let connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'fixture/falcon-wf',release_tag:'v0.1.0-alpha.3',_wpnonce:repoNonce})});
+ const pinned=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
+ ok(connectionResult.status===302 && pinned.body.includes('value="v0.1.0-alpha.3"'),'nonce-protected connection saves selected prerelease tag');
+ connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'fixture/falcon-wf',release_tag:'../unsafe',_wpnonce:repoNonce})});
+ const rejected=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
+ ok(connectionResult.status===302 && rejected.body.includes('value="v0.1.0-alpha.3"'),'invalid release selection preserves previous connection');
  const identity=await admin('/wp-admin/admin.php?page=falcon-wf-identity');
  const nonce=identity.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];ok(!!nonce,'identity action uses nonce');
  let r=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_identity',screen:'identity',name:'Falcon WF Local',contact:'',_wpnonce:nonce})});
@@ -35,11 +44,27 @@ try{
  const nativeNonce=form.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];
  const metaNonce=form.body.match(/name="fwf_fields_nonce" value="([^"]+)"/)?.[1];
  const metaRevision=form.body.match(/name="fwf_meta_revision" value="([^"]+)"/)?.[1];
- const nativeValues={action:'editpost',post_ID:String(content.id),post_type:'fwf_project',post_title:content.fields.title,post_status:'draft',_wpnonce:nativeNonce,fwf_fields_nonce:metaNonce,fwf_meta_revision:metaRevision,'fields[location]':'Native HTTP changed','fields[project_year]':'2026','fields[project_stage]':'development','fields[cover_image]':'0'};
+ const contentRevision=form.body.match(/name="fwf_content_revision" value="([^"]+)"/)?.[1];
+ const nativeValues={action:'editpost',post_ID:String(content.id),post_type:'fwf_project',post_title:content.fields.title,post_status:'draft',_wpnonce:nativeNonce,fwf_fields_nonce:metaNonce,fwf_meta_revision:metaRevision,fwf_content_revision:contentRevision,'fields[location]':'Native HTTP changed','fields[project_year]':'2026','fields[project_stage]':'development','fields[cover_image]':'0'};
  r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(nativeValues)});
  ok(r.status===302 && JSON.parse(cli('content-fixture.php','get',content.id)).fields.location==='Native HTTP changed','native editor HTTP save persists custom fields');
  r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...nativeValues,'fields[location]':'Stale HTTP attempt'})});
- ok(JSON.parse(cli('content-fixture.php','get',content.id)).fields.location==='Native HTTP changed','stale native HTTP metadata save refused');
+ ok(r.status===409 && JSON.parse(cli('content-fixture.php','get',content.id)).fields.location==='Native HTTP changed','stale native HTTP whole save refused');
+ const beforePublish=JSON.parse(cli('content-fixture.php','get',content.id));
+ const freshForm=await editor(formPath);
+ const freshValues={...nativeValues,fwf_meta_revision:freshForm.body.match(/name="fwf_meta_revision" value="([^"]+)"/)?.[1],fwf_content_revision:freshForm.body.match(/name="fwf_content_revision" value="([^"]+)"/)?.[1]};
+ r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...freshValues,post_title:'Invalid publish must not save',content:'Invalid body must not save',post_status:'publish','fields[project_year]':'9999'})});
+ ok(r.status===400 && JSON.parse(cli('content-fixture.php','get',content.id)).revision===beforePublish.revision,'invalid native HTTP publish preserves title body status and fields');
+ const missingNonce={...freshValues,post_title:'Missing nonce must not save',post_status:'publish'};delete missingNonce.fwf_fields_nonce;
+ r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(missingNonce)});
+ ok(r.status===403 && JSON.parse(cli('content-fixture.php','get',content.id)).revision===beforePublish.revision,'missing field nonce blocks whole native HTTP publish');
+ const malformed={...freshValues,post_status:'publish',fields:'invalid'};for(const key of Object.keys(malformed)){if(key.startsWith('fields[')){delete malformed[key];}}
+ r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(malformed)});
+ ok(r.status===400 && JSON.parse(cli('content-fixture.php','get',content.id)).revision===beforePublish.revision,'malformed field payload blocks whole native HTTP write');
+ r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...nativeValues,post_title:'Stale publish must not save',post_status:'publish'})});
+ ok(r.status===409 && JSON.parse(cli('content-fixture.php','get',content.id)).revision===beforePublish.revision,'stale native HTTP publish cannot change title or status');
+ r=await editor('/wp-admin/post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...freshValues,post_status:'publish'})});
+ ok(r.status===302 && JSON.parse(cli('content-fixture.php','get',content.id)).status==='publish','valid native HTTP publish saves through guarded chain');
  const builder=await admin('/wp-admin/admin.php?page=falcon-wf-content');
  ok(builder.body.includes('Content Builder') && builder.body.includes('Field Groups') && !builder.body.includes('Schema dikelola melalui kode'),'builder replaces fixed directory');
  const create=await admin('/wp-admin/admin.php?page=falcon-wf-content&tab=types&new=1');

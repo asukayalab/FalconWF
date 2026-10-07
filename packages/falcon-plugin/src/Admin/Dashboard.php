@@ -43,8 +43,8 @@ final class Dashboard {
         wp_nonce_field('fwf_'.$op);
     }
     private function end(string $label): void { submit_button($label); echo '</form>'; }
-    private function text(string $name,string $label,string $value='',string $type='text'): void {
-        echo '<p><label for="fwf-'.esc_attr($name).'">'.esc_html($label).'</label><br><input class="regular-text" id="fwf-'.esc_attr($name).'" name="'.esc_attr($name).'" type="'.esc_attr($type).'" value="'.esc_attr($value).'" required></p>';
+    private function text(string $name,string $label,string $value='',string $type='text',bool $required=true): void {
+        echo '<p><label for="fwf-'.esc_attr($name).'">'.esc_html($label).'</label><br><input class="regular-text" id="fwf-'.esc_attr($name).'" name="'.esc_attr($name).'" type="'.esc_attr($type).'" value="'.esc_attr($value).'"'.($required?' required':'').'></p>';
     }
     public function render(string $page): void {
         if (!current_user_can(self::PAGES[$page][1])) { wp_die('Tidak diizinkan.', '', ['response'=>403]); }
@@ -73,9 +73,12 @@ final class Dashboard {
             case 'ai': $this->ai(); break;
             case 'connections':
                 $this->start('save_repo',$page); $this->text('repo','Repo FWF private: owner/name',(string)get_option('fwf_repo',''));
+                $this->text('release_tag','Tag prerelease (local/staging saja; kosong = stable)',(string)get_option('fwf_update_tag',''),'text',false);
+                echo '<p>Commit/push belum membuat update: GitHub Release harus berisi release-manifest.json dan ZIP komponen dari build commit bersih. Prerelease dipilih lewat tag tertentu, bukan otomatis.</p>';
                 echo '<p>Credential read-only berasal dari FWF_GITHUB_TOKEN server-side. Repo hanya sumber release, bukan runtime frontend. Paket klien belum didukung build ini.</p>'; $this->end('Simpan repo release'); break;
             case 'updates':
-                $this->start('check_updates',$page); $this->end('Periksa private stable release');
+                $this->start('check_updates',$page); $this->end(get_option('fwf_update_tag','')===''?'Periksa private stable release':'Periksa tag prerelease terpilih');
+                echo '<p>Environment: '.esc_html(wp_get_environment_type()).' · Jalur: '.esc_html(get_option('fwf_update_tag','')?:'stable terbaru').'.</p>';
                 $candidate=get_option('fwf_release_candidate',[]);
                 foreach ($candidate['manifest']['packages']??[] as $package) {
                     echo '<p>'.esc_html($package['id'].' → '.$package['version']).'</p>';
@@ -156,7 +159,9 @@ final class Dashboard {
             switch ($op) {
                 case 'save_repo':
                     $repo=sanitize_text_field($p['repo']??'');
-                    if (!\FalconWF\Updates\GitHubClient::validRepo($repo)) { $result=new \WP_Error('FWF_VALIDATION','Gunakan owner/name tanpa credential URL.'); } else { update_option('fwf_repo',$repo,false); delete_option('fwf_release_candidate'); } break;
+                    $tag=is_string($p['release_tag']??'')?trim($p['release_tag']??''):null;
+                    $selection=$tag===null?new \WP_Error('FWF_VALIDATION','Tag harus berupa teks.'):\FalconWF\Updates\UpdateManager::validateSelection($tag);
+                    if (!\FalconWF\Updates\GitHubClient::validRepo($repo)) { $result=new \WP_Error('FWF_VALIDATION','Gunakan owner/name tanpa credential URL.'); } elseif(is_wp_error($selection)) { $result=$selection; } else { update_option('fwf_update_tag',$tag,false); update_option('fwf_repo',$repo,false); delete_option('fwf_release_candidate'); } break;
                 case 'check_updates': $result=(new \FalconWF\Updates\UpdateManager())->check(); break;
                 case 'apply_update': $result=(new \FalconWF\Updates\UpdateManager())->update(sanitize_key($p['package_id']??''),($p['backup']??'')==='yes'); break;
                 case 'install_theme': $result=(new ThemeInstaller(dirname($this->file)))->install(); break;

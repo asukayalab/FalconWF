@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build pengembangan `0.1.0-alpha.1`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini `0.1.0-alpha.2`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -23,7 +23,7 @@
 | Private release | Repo owner/name fixed, server-side `FWF_GITHUB_TOKEN` dengan Contents read terbatas ke repo. Manifest stable/clean source, package ID/type/version/runtime/hash diverifikasi. Mendukung asset 200 dan 302; Authorization tidak diteruskan ke signed download host. |
 | Update | Satu komponen per aksi manual, backup/staging confirmation, current/target version dan lock. WP upgrader untuk write/recovery kode; rollback database tidak dijanjikan. Paket proyek dan pipeline immutable belum didukung. |
 | Ekstensi | `fwf_ready` menyediakan Bootstrap setelah plugins_loaded; `fwf_register_modules` pada init menyediakan Registry untuk descriptor proyek. Missing/cyclic dependencies dan duplicate IDs/CPT ditolak. |
-| Git/dokumen | docs dan session-notes lokal saja. engineering memuat kontrak/status/evidence teknis, bukan salinan seluruh referensi atau transcript. Git lokal; belum ada remote/push. |
+| Git/dokumen | docs dan session-notes lokal saja. engineering memuat kontrak/status/evidence teknis, bukan salinan seluruh referensi atau transcript. Awalnya Git lokal tanpa remote; checkout utama kini remote asukayalab/FalconWF. Publish/release tetap tindakan terpisah. |
 
 Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/requirements/), [PHP support](https://www.php.net/supported-versions.php), [Theme installer](https://developer.wordpress.org/reference/classes/theme_upgrader/install/), [REST auth](https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/), [Application password constraints](https://developer.wordpress.org/reference/hooks/wp_authenticate_application_password_errors/), [Responses text](https://developers.openai.com/api/docs/guides/text), [MCP transport](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports), [GitHub assets](https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28).
 
@@ -41,8 +41,23 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Project satu-satunya bawaan, posisi menu setelah Pages. Definisi/field dapat dinonaktifkan tanpa purging; legacy Publications/Learning disimpan sebagai compatibility path dan bukan default UI/demo.
 - Kategori/tag dan jenis konten menjadi filter listing. Slug mengatur URL. Metadata tetap detail nilai, tidak dipakai sebagai pengganti klasifikasi. Shortcode fixed cards pertama, bukan visual query builder.
 - Field baru default private. AI describe_schema hanya memberi schema dalam grant, tanpa tools structural/admin mutation. UI AI membedakan MCP dan API; paket ChatGPT/OAuth masih pending eligibility/auth implementation.
-- Native main-content saving dan metadata saving tidak atomic; jika field invalid/stale, nilai field ditolak dan notice ditampilkan, namun native content yang telah disimpan tidak di-rollback. Ini batas yang harus diperbaiki sebelum full editor/publish validation acceptance.
+- Historis revisi builder awal: native main-content saving dan metadata saving tidak atomic; invalid/stale field ditolak setelah native content tersimpan. Behavior ini digantikan guard pre-write pada bagian Native save guard di bawah; transaksi universal tetap tidak dijanjikan.
 
 
 - Listing multi-selection uses OR within a single taxonomy. Check all means any assigned term, includes future terms, and excludes unclassified items; empty selection prevents copying. Limits stay within 1–50. Type-dependent, nonce-protected term loading uses 200-term pages.
 - Builder drag handles preserve arrow alternatives and separate reordering from saving. Cancel links discard unsaved form state. AI onboarding documents existing HTTP Basic and server-side API setup; it does not claim direct subscription/OAuth/client acceptance.
+
+## Native save guard dan harness — 7 Oktober 2026
+
+- Jenis dengan field Falcon memakai editor native klasik untuk satu form save boundary. Gutenberg legacy metaboxs melakukan request setelah content REST write; adapter gabungan belum tersedia. Jenis tanpa field Falcon tetap memakai editor normalnya.
+- Validasi nonce/capability/revisi dan lock schema/object mendahului native write. Metadata tervalidasi disimpan sebelum transisi native publication; handler save_post lama diganti early-save guard, bukan dipertahankan sebagai jalur paralel. Native REST dan insert/update publication memvalidasi contract field tersimpan; scheduler recheck sebelum core publish.
+- Tidak menjanjikan transaksi universal: native SQL/hook failure setelah metadata tersimpan perlu rekonsiliasi; privileged wp_publish_post/direct SQL dari plugin lain di luar boundary ini. Rincian di CONTENT-SCHEMA.md.
+- Runner integrasi menangkap konfigurasi situs lalu restore dalam finally, termasuk child failure. Snapshot bertanda owner dan tidak ditimpa saat stale; docs/notes/credential/artefak tetap lokal ignored.
+
+## Jalur prerelease lokal/staging — 7 Oktober 2026
+
+- Tag kosong tetap stable terbaru. Operator memilih tag alpha/beta/rc tertentu pada Proyek & Koneksi; runtime menolak prerelease di development/production dan hanya menerima local/staging. Credential GitHub tetap server-side read-only.
+- Manifest prerelease status development, dirty false, source_commit SHA dan versi rilis cocok dengan tag. Versi rilis produk terpisah dari versi komponen; paket boleh berbeda versi. Tidak mengubah alpha menjadi stable.
+- Apply mengambil ulang metadata dan menuntut paket sama dengan kandidat yang telah diperiksa; metadata/tag/connection berubah memerlukan check/review ulang.
+- Plugin self-update menggunakan WP Plugin_Upgrader bulk path dengan satu target agar status aktif dipertahankan; jalur upgrade tunggal yang menonaktifkan plugin diganti. Tidak menambahkan handler update paralel atau aktivasi ulang otomatis.
+- Pengujian tetap Docker lokal sesuai pilihan user. GitHub metadata/download fixture bukan live acceptance. Kontrak paket klien di PROJECT-PACKAGES.md; installer proyek dan global design/SEO tetap tahap berikutnya.

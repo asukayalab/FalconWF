@@ -15,11 +15,11 @@ Alpha.2 menambahkan setup tiga langkah dengan status aktual/preflight/recovery g
 | Q01 Integrasi | Static inventory dan jalur runtime inti lokal lulus; contract proyek/pilot belum diuji. |
 | Q02 Packaging | ZIP/runtime/asset/hash/FT bundle dan repeat-build lulus; Build deterministik diuji; provenance commit/dirty aktual di manifest artefak. Lisensi distribusi belum ditentukan. |
 | Q03 Installer | Fresh/existing/retry/same-newer-older/corrupt/local role denial diuji. Preflight permission/temp/disk dan guidance retry tersedia; simulasi credential filesystem dan traversal ZIP diuji. Disk exhaustion nyata, credential wizard interaktif, recovery insiden dan matrix host belum lengkap. |
-| Q04 Content | Native fields/revision/draft visibility, schema validation dan module disable/dependency diuji. Typed fields, media/relasi modul contoh, metadata conflict/revisions/restore serta edit manusia diuji. Builder dinamis dan taxonomy/listing diuji lokal; contract pilot Rizal, repeater dan validasi atomik publish seluruh editor belum tersedia. |
+| Q04 Content | Native fields/revision/draft visibility, schema validation dan module disable/dependency diuji. Typed fields, media/relasi modul contoh, metadata conflict/revisions/restore serta edit manusia diuji. Builder dinamis dan taxonomy/listing diuji lokal; guard invalid/stale native form dan field-required publish diterapkan; contract pilot Rizal, repeater, adapter Gutenberg gabungan dan transaksi universal belum tersedia. Bukti regresi terbaru ada di EVIDENCE.md. |
 | Q05 Admin/security | Admin/editor HTTP screens/action/nonce serta agent REST/XML-RPC boundaries diuji. Independent security review belum dilakukan. |
 | Q06 Outbound | Adapter/proposal/review/error/disconnect dapat diuji dengan fixture; real provider request belum tersedia. **Belum lulus gate rilis.** |
 | Q07 Inbound | Node client HTTP MCP initialization/discovery/read/create/edit/revoke lulus lokal. Client target dan staging HTTPS eksternal belum diuji. **Belum lulus gate rilis.** |
-| Q08 Update/recovery | Actual WordPress theme upgrader diuji dengan mocked GitHub metadata/download; corrupt/redirect/no-downgrade checks. Private release nyata, plugin self-update, recovery insiden dan paket proyek belum lulus. |
+| Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Private release nyata, recovery insiden dan installer paket proyek belum lulus. |
 | Q09 Data | Initial migration retry/settings preserve/nonpurge checks. Backup/restore rehearsal dan RPO/RTO belum tersedia. |
 | Q10 UX | Frontend/default, detail demo dan admin lokal direview browser; status ukuran dan bukti aktual di EVIDENCE. HTTP admin menguji human fields/nonce/stale denial. Matrix Safari/Android, seluruh keyboard flow dan host belum lengkap. |
 
@@ -31,4 +31,4 @@ Alpha.2 menambahkan setup tiga langkah dengan status aktual/preflight/recovery g
 - Backup/restore target dan rehearsal; lisensi/notice sebelum distribusi.
 - V8/CV/aset untuk pilot Rizal, terpisah dari core AI.
 
-Tidak ada remote GitHub, production deployment atau provider request berbayar pada sesi implementasi awal.
+Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote private asukayalab/FalconWF dan runtime lokal sudah memakai mount clone. Belum ada release/update acceptance nyata atau provider request berbayar; pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.

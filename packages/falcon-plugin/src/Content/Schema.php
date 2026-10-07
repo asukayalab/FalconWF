@@ -85,6 +85,24 @@ final class Schema {
         if ($required && !empty($d['required']) && ($clean==='' || $clean===0)) { return new \WP_Error('FWF_VALIDATION','Field wajib diisi: '.$d['label'].'.'); }
         return $clean;
     }
+    /** Non-form publishers may only use the already valid stored field contract. */
+    public static function validatePublication(int $id,string $type,string $status,array $meta=[]): true|\WP_Error {
+        $definitions=self::custom($type);
+        if (!$definitions || !in_array($status,['publish','future','private'],true)) { return true; }
+        $values=self::values($id,$type);
+        foreach ($meta as $key=>$value) {
+            if (str_starts_with((string)$key,'_fwf_')) {
+                $field=substr($key,5);
+                if (!isset($definitions[$field])) { return new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
+                // WordPress meta_input is slashed and may contain numeric strings.
+                $value=wp_unslash($value);
+                if (is_string($value) && in_array($definitions[$field]['kind'],['integer','image','relationship'],true) && preg_match('/^\d+$/D',$value)) { $value=(int)$value; }
+                $values[$field]=$value;
+            }
+        }
+        $validated=self::validate($values,$type);
+        return is_wp_error($validated)?$validated:true;
+    }
     public static function register(): void {
         foreach (self::types() as $type) {
             if (!post_type_exists($type)) { continue; }

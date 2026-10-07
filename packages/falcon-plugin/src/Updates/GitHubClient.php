@@ -26,17 +26,19 @@ final class GitHubClient {
         if ($status!==200) { if(isset($tmp)){wp_delete_file($tmp);} return new \WP_Error('FWF_UPSTREAM','Asset API tidak menghasilkan alur download yang didukung.'); }
         return $stream?$tmp:wp_remote_retrieve_body($response);
     }
-    public function release(): array|\WP_Error {
+    public function release(string $tag=''): array|\WP_Error {
+        $selection=UpdateManager::validateSelection($tag); if(is_wp_error($selection)){return $selection;}
         if (!self::validRepo($this->repo) || !defined('FWF_GITHUB_TOKEN') || !FWF_GITHUB_TOKEN) { return new \WP_Error('FWF_AUTH','Repo owner/name dan credential server-side FWF_GITHUB_TOKEN diperlukan.'); }
-        $r=wp_safe_remote_get('https://api.github.com/repos/'.$this->repo.'/releases/latest',[
+        $r=wp_safe_remote_get('https://api.github.com/repos/'.$this->repo.($tag===''?'/releases/latest':'/releases/tags/'.rawurlencode($tag)),[
             'timeout'=>20,'redirection'=>0,'limit_response_size'=>1024*1024,
             'headers'=>['Authorization'=>'Bearer '.FWF_GITHUB_TOKEN,'Accept'=>'application/vnd.github+json','X-GitHub-Api-Version'=>'2022-11-28','User-Agent'=>'Falcon-WF']]);
         if (is_wp_error($r) || wp_remote_retrieve_response_code($r)!==200) { return new \WP_Error('FWF_UPSTREAM','Private release tidak tersedia atau akses ditolak.'); }
         $release=json_decode(wp_remote_retrieve_body($r),true);
-        if (!is_array($release) || !empty($release['draft']) || !empty($release['prerelease']) || !is_array($release['assets']??null)) { return new \WP_Error('FWF_PACKAGE','Release stable tidak valid.'); }
+        if (!is_array($release) || ($release['draft']??null)!==false || (($release['prerelease']??null)!==($tag!=='')) || ($tag!=='' && ($release['tag_name']??'')!==$tag) || !is_array($release['assets']??null)) { return new \WP_Error('FWF_PACKAGE','Release tidak cocok dengan jalur stable/prerelease yang dipilih.'); }
         $assets=[];
         foreach ($release['assets'] as $asset) {
             if (!is_string($asset['name']??null) || !is_int($asset['id']??null) || $asset['id']<1) { return new \WP_Error('FWF_PACKAGE','Metadata asset tidak valid.'); }
+            if(isset($assets[$asset['name']])){return new \WP_Error('FWF_PACKAGE','Nama asset duplikat.');}
             $assets[$asset['name']]=$asset['id'];
         }
         if (!isset($assets['release-manifest.json'])) { return new \WP_Error('FWF_PACKAGE','Release manifest belum tersedia.'); }

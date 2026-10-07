@@ -4,8 +4,9 @@ function state(mode){const r=spawnSync('docker',['compose','--env-file','local/.
 // State changes run WP-CLI long enough to outlive Apache keep-alive connections.
 const get=url=>fetch(url,{headers:{Connection:'close'}});
 let checks=0;function ok(x,label){assert(x,label);checks++;console.log('PASS:',label);}
+let captured=false;
 try {
- state('identity-fixture');
+ state('identity-fixture');captured=true;
  const initial=await get('http://localhost:8091/');const html=await initial.text();
  ok(initial.status===200 && html.includes('DALAM PEMBANGUNAN'),'default FT renders installed runtime');
  ok(html.includes('WP Site Fixture') && html.includes('WP Tagline Fixture') && !html.includes('Falcon WF Local'),'header uses native site title and tagline');
@@ -21,4 +22,4 @@ try {
  state('activate');
  const restored=await get('http://localhost:8091/');ok(restored.status===200,'FP reactivation retains working frontend');
  console.log(`Frontend HTTP checks passed: ${checks}. Responsive visual review is separate.`);
-} finally {state('identity-restore');state('maintenance-off');state('activate');}
+} finally {if(captured){state('identity-restore');}}
