@@ -24,4 +24,20 @@ final class Verifier {
         if (!$valid || $size > 20*1024*1024 || !isset($seen['falcon-theme/index.php']) || !is_string($style) || !preg_match('/^Version:\s*(.+)$/m', $style, $v) || trim($v[1]) !== $manifest['theme']['version']) { return new \WP_Error('FWF_PACKAGE', 'Isi/path/versi bundle FT tidak valid.'); }
         return $manifest['theme']+['expanded_bytes'=>$size];
     }
+    public static function remote(string $path,array $package): true|\WP_Error {
+        if(!is_file($path) || filesize($path)>20*1024*1024 || !hash_equals($package['sha256'],hash_file('sha256',$path)) || !class_exists('ZipArchive')){return new \WP_Error('FWF_PACKAGE','Paket corrupt atau ZIP tidak didukung.');}
+        $zip=new \ZipArchive();if($zip->open($path)!==true){return new \WP_Error('FWF_PACKAGE','ZIP tidak valid.');}
+        try {
+            $seen=[];$total=0;$root=$package['id'].'/';
+            for($i=0;$i<$zip->numFiles;$i++){
+                $stat=$zip->statIndex($i);$name=$stat['name'];$total+=$stat['size'];$os=0;$attr=0;$zip->getExternalAttributesIndex($i,$os,$attr);
+                if(!str_starts_with($name,$root) || str_contains($name,'..') || str_contains($name,'\\') || str_contains($name,"\0") || array_intersect(explode('/',rtrim($name,'/')),['','.']) || isset($seen[$name]) || (($attr>>16)&0170000)===0120000 || $total>40*1024*1024){return new \WP_Error('FWF_PACKAGE','ZIP path/ukuran tidak aman.');}$seen[$name]=true;
+            }
+            $header=$zip->getFromName($root.($package['type']==='plugin'?'falcon-wf.php':'style.css'));
+            if(!is_string($header) || !preg_match('/^[ *]*Version:\s*(.+)$/m',$header,$match) || trim($match[1])!==$package['version']){return new \WP_Error('FWF_PACKAGE','Versi header tidak cocok.');}
+            if($package['type']==='theme' && !isset($seen[$root.'index.php'])){return new \WP_Error('FWF_PACKAGE','Theme tanpa entrypoint.');}
+            if (isset($package['parent']) && (!preg_match('/^[ *]*Template:\s*(.+)$/m',$header,$parent) || trim($parent[1])!==$package['parent'])) { return new \WP_Error('FWF_PACKAGE','Parent header tidak cocok dengan manifest.'); }
+            return true;
+        } finally {$zip->close();}
+    }
 }

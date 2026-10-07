@@ -7,7 +7,7 @@ wp_set_current_user(get_user_by('login','fwf-admin')->ID);
 $themeRoot=get_theme_root().'/falcon-reference';
 $save=static function ($snapshot) use ($key) { update_option($key,$snapshot,false); };
 if ($mode==='setup') {
-    $settings=[];foreach(['stylesheet','template','current_theme','theme_switched','theme_mods_falcon-reference','theme_mods_falcon-theme','show_on_front','page_on_front','page_for_posts','blog_public','fwf_builder','fwf_modules','fwf_field_contracts','fwf_rewrite_pending','fwf_maintenance','active_plugins'] as $name){$settings[$name]=['exists'=>get_option($name,null)!==null,'value'=>get_option($name,null)];}
+    $settings=[];foreach(['stylesheet','template','current_theme','theme_switched','theme_mods_falcon-reference','theme_mods_falcon-theme','show_on_front','page_on_front','page_for_posts','blog_public','fwf_builder','fwf_modules','fwf_field_contracts','fwf_rewrite_pending','fwf_maintenance','fwf_seo','fwf_design_falcon-reference','active_plugins'] as $name){$settings[$name]=['exists'=>get_option($name,null)!==null,'value'=>get_option($name,null)];}
     $files=[];if(is_dir($themeRoot)){foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($themeRoot,FilesystemIterator::SKIP_DOTS)) as $file){if($file->isLink()){throw new RuntimeException('Reference tree symlink refused.');}$files[substr($file->getPathname(),strlen($themeRoot)+1)]=file_get_contents($file->getPathname());}}
     $snapshot=['owner'=>$owner,'settings'=>$settings,'files'=>$files,'theme_existed'=>is_dir($themeRoot),'ids'=>[]];
     if(!add_option($key,$snapshot,'',false)){throw new RuntimeException('Prior reference snapshot requires recovery.');}
@@ -19,7 +19,7 @@ if ($mode==='setup') {
     if(get_stylesheet()!==$settings['stylesheet']['value']){throw new RuntimeException('Install switched theme.');}
     delete_option('fwf_builder');FalconWF\Content\Definitions::init();$definitions=FalconWF\Content\Definitions::all();$definitions['groups']['project_details']['fields']['location']['public']=false;update_option('fwf_builder',$definitions,false);
     $app=FalconWF\Bootstrap::instance();$app->modules->setActive(['projects']);$app->modules->register();
-    update_option('fwf_maintenance',false,false);update_option('blog_public','1');
+    update_option('fwf_seo',['mode'=>'falcon'],false);update_option('fwf_maintenance',false,false);update_option('blog_public','1');
     $insert=static function($post) use (&$snapshot,$save){$id=wp_insert_post($post,true);if(is_wp_error($id)){throw new RuntimeException($id->get_error_message());}$snapshot['ids'][]=$id;$save($snapshot);return $id;};
     $home=$insert(['post_type'=>'page','post_title'=>'Reference Beranda','post_content'=>'<p>Reference homepage editable content.</p>','post_status'=>'publish']);
     $page=$insert(['post_type'=>'page','post_title'=>'Reference Tentang','post_content'=>'<h2>Reference section</h2><p>Reference ordinary page body.</p>','post_status'=>'publish']);
@@ -34,8 +34,9 @@ if ($mode==='setup') {
 } else {
     $snapshot=get_option($key,false);if(!$snapshot || !hash_equals($snapshot['owner'],$owner)){throw new RuntimeException('Snapshot owner mismatch.');}
     if($mode==='hide-site'){update_option('blog_public','0');}
+    elseif($mode==='design'){ $result=FalconWF\Settings::saveDesign(['ink'=>'#135724','body_font'=>'system','h1'=>'68','spacing'=>'32'],get_stylesheet(),FalconTheme\Design::revision()); if(is_wp_error($result)){throw new RuntimeException($result->get_error_message());} }
     elseif($mode==='deactivate'){deactivate_plugins('falcon-wf/falcon-wf.php');}
-    elseif($mode==='dynamic-home'){update_option('show_on_front','posts');}
+    elseif($mode==='dynamic-home'){update_option('show_on_front','posts');update_option('blog_public','1');}
     elseif($mode==='parent'){switch_theme('falcon-theme');update_option('show_on_front','posts');update_option('blog_public','1');}
     elseif($mode==='restore'){
         // Restore exactly the original options without activation/switch hooks.

@@ -17,8 +17,28 @@ let checks=0;const ok=(x,label)=>{assert(x,label);checks++;console.log('PASS:',l
 async function login(actor){const s=session();await s('/wp-login.php');const r=await s('/wp-login.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({log:actor.login,pwd:actor.password,'wp-submit':'Log In',testcookie:'1',redirect_to:base+'/wp-admin/'})});ok(r.status===302,'local fixture login');return s;}
 try{
  const admin=await login(fixtures.administrator);
- const screens=['','-content','-identity','-modules','-connections','-ai','-updates','-maintenance','-audit'];
+ const screens=['','-content','-identity','-design','-modules','-connections','-ai','-updates','-maintenance','-audit'];
  for(const screen of screens){const r=await admin('/wp-admin/admin.php?page=falcon-wf'+screen);ok(r.status===200 && r.body.includes('class="wrap fwf"') && !r.body.includes('Fatal error'),'admin screen '+(screen||'overview')+' renders');}
+ const design=await admin('/wp-admin/admin.php?page=falcon-wf-design');
+ ok(design.body.includes('name="reset_design" value="yes" formnovalidate'),'design reset control submits explicit intent without HTML field validation');
+ const designForm={action:'fwf_action',operation:'save_design',screen:'design',theme:design.body.match(/name="theme" value="([^"]+)"/)?.[1],revision:design.body.match(/name="revision" value="([^"]+)"/)?.[1],_wpnonce:design.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1],'design[ink]':'#123456','design[body_font]':'system','design[h1]':'64'};
+ let designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(designForm)});
+ const savedDesign=await admin('/wp-admin/admin.php?page=falcon-wf-design');
+ ok(designResult.status===302 && savedDesign.body.includes('value="#123456"'),'design admin form persists settings');
+ const designHTML=await (await fetch(base+'/',{headers:{Connection:'close'}})).text();
+ ok(designHTML.includes('--fwf-ink:#123456;') && designHTML.includes('--fwf-h1:64px;'),'saved design reaches actual parent frontend inline CSS');
+ designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...designForm,'design[ink]':'#654321'})});
+ const staleDesign=await admin('/wp-admin/admin.php?page=falcon-wf-design');
+ ok(designResult.status===302 && staleDesign.body.includes('Desain sudah berubah') && staleDesign.body.includes('value="#123456"'),'stale design HTTP form preserves latest settings');
+ const freshDesign={...designForm,revision:staleDesign.body.match(/name="revision" value="([^"]+)"/)?.[1]};
+ designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...freshDesign,'design[ink]':'</style><script>bad</script>'})});
+ const badDesign=await admin('/wp-admin/admin.php?page=falcon-wf-design');
+ ok(designResult.status===302 && badDesign.body.includes('Nilai tidak valid') && badDesign.body.includes('value="#123456"'),'unsafe CSS input rejected without partial write');
+ designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...freshDesign,_wpnonce:'invalid'})});
+ ok(designResult.status===403,'design mutation requires valid nonce');
+ const resetDesign={...freshDesign};for(const key of Object.keys(resetDesign)){if(key.startsWith('design['))resetDesign[key]='';}
+ designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...resetDesign,reset_design:'yes'})});
+ ok(designResult.status===302 && !(await (await fetch(base+'/',{headers:{Connection:'close'}})).text()).includes('--fwf-ink:#123456;'),'reset design button removes frontend overrides');
  const connections=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
  ok(connections.body.includes('name="release_tag"') && connections.body.includes('local/staging') && !connections.body.match(/<input[^>]*name="release_tag"[^>]*required/),'release connection explains and renders pinned prerelease field');
  const repoNonce=connections.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];
@@ -28,12 +48,46 @@ try{
  connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'fixture/falcon-wf',release_tag:'../unsafe',_wpnonce:repoNonce})});
  const rejected=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
  ok(connectionResult.status===302 && rejected.body.includes('value="v0.1.0-alpha.3"'),'invalid release selection preserves previous connection');
+ const projectNonce=rejected.body.match(/name="operation" value="save_project"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];
+ const projectForm={action:'fwf_action',operation:'save_project',screen:'connections',project_repo:'fixture/client-design',project_id:'falcon-reference',theme_id:'falcon-reference',project_tag:'v0.1.0-alpha.2',_wpnonce:projectNonce};
+ let projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(projectForm)});
+ const projectConnection=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
+ ok(projectResult.status===302 && projectConnection.body.includes('value="fixture/client-design"') && projectConnection.body.includes('FWF_PROJECT_GITHUB_TOKEN'),'project connection form stores isolated repo and explains server-side token');
+ projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,theme_id:'falcon-theme'})});
+ const projectRefused=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
+ ok(projectResult.status===302 && projectRefused.body.includes('value="falcon-reference"'),'project form cannot retarget core theme');
+ const projectUpdates=await admin('/wp-admin/admin.php?page=falcon-wf-updates');
+ ok(projectUpdates.body.includes('Paket desain proyek') && projectUpdates.body.includes('Periksa paket proyek'),'project check/review flow appears in updates');
+ for(const operation of ['save_project','check_project','apply_project','disconnect_project']){
+  projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,operation,_wpnonce:'invalid'})});
+  ok(projectResult.status===403,`project ${operation} requires its own nonce`);
+ }
+ const disconnectNonce=projectConnection.body.match(/name="operation" value="disconnect_project"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];
+ projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'disconnect_project',screen:'connections',_wpnonce:disconnectNonce})});
+ ok(projectResult.status===302 && !(await admin('/wp-admin/admin.php?page=falcon-wf-connections')).body.includes('value="fixture/client-design"'),'project disconnect removes connection');
  const identity=await admin('/wp-admin/admin.php?page=falcon-wf-identity');
+ const seoNonce=identity.body.match(/name="operation" value="save_seo"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];
+ const seoRevision=identity.body.match(/name="revision" value="([^"]+)"/)?.[1];
+ const seoForm={action:'fwf_action',operation:'save_seo',screen:'identity',seo_mode:'falcon',revision:seoRevision,_wpnonce:seoNonce};
+ ok(!!seoNonce && identity.body.includes('name="seo_mode"'),'SEO form has dedicated nonce and explicit owner selection');
+ let seoResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...seoForm,_wpnonce:'invalid'})});
+ ok(seoResult.status===403,'SEO mutation requires dedicated nonce');
+ seoResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(seoForm)});
+ const seoSaved=await admin('/wp-admin/admin.php?page=falcon-wf-identity');
+ ok(seoResult.status===302 && /value="falcon"\s+selected/.test(seoSaved.body),'SEO opt-in saves through actual admin boundary');
+ const seoHome=await (await fetch(base+'/',{headers:{Connection:'close'}})).text();
+ ok(seoHome.includes('noindex') && !seoHome.includes('property="og:title"'),'coming-soon remains noindex without Falcon metadata after opt-in');
+ seoResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...seoForm,seo_mode:'external',revision:seoSaved.body.match(/name="revision" value="([^"]+)"/)?.[1]})});
+ ok(seoResult.status===302,'SEO metadata can be disabled from admin');
  const nonce=identity.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];ok(!!nonce,'identity action uses nonce');
  let r=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_identity',screen:'identity',name:'Falcon WF Local',contact:'',_wpnonce:nonce})});
  ok(r.status===302 && r.location.includes('falcon-wf-identity'),'authorized identity action redirects to screen');
  r=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_identity',name:'Bad'})});ok(r.status===403,'missing nonce refused');
  const editor=await login(fixtures.editor);
+ const seoDenied=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(seoForm)});ok(seoDenied.status===403,'editor cannot change SEO owner');
+ r=await editor('/wp-admin/admin.php?page=falcon-wf-design');ok(r.status===403,'editor cannot open design settings');
+ r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(designForm)});ok(r.status===403,'editor direct design mutation denied');
+ for(const operation of ['save_project','check_project','apply_project','disconnect_project']){r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,operation})});ok(r.status===403,`editor project ${operation} denied`);}
  r=await editor('/wp-admin/admin.php?page=falcon-wf-content');ok(r.status===403,'editor cannot change content definitions');
  r=await editor('/wp-admin/admin.php?page=falcon-wf-ai');ok(r.status===403,'editor cannot open AI policy page directly');
  r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'install_theme',_wpnonce:nonce})});ok(r.status===403,'editor direct install action refused');

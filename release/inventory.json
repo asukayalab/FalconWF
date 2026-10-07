@@ -53,7 +53,7 @@
     "package": "plugin",
     "path": "src/Admin/Dashboard.php",
     "loaded_by": "Bootstrap admin hooks",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "proof": "tests/admin.test.mjs (10 screens, design nonce/capability/revision/reset); tests/integration.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-plugin/src/Api/Routes.php",
@@ -136,15 +136,15 @@
     "source": "packages/falcon-plugin/src/Packages/Verifier.php",
     "package": "plugin",
     "path": "src/Packages/Verifier.php",
-    "loaded_by": "ThemeInstaller",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "loaded_by": "ThemeInstaller bundle / core UpdateManager facade / ProjectManager shared remote ZIP",
+    "proof": "tests/integration.php; tests/update.php; tests/project-update.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-plugin/src/Settings.php",
     "package": "plugin",
     "path": "src/Settings.php",
-    "loaded_by": "Dashboard / FalconTheme identity",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "loaded_by": "Dashboard identity / design locked persistence \u2192 FalconTheme Design contract",
+    "proof": "tests/design.php; tests/admin.test.mjs; tests/project.test.mjs; tests/integration.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-plugin/uninstall.php",
@@ -192,8 +192,8 @@
     "source": "packages/falcon-theme/inc/assets.php",
     "package": "theme",
     "path": "inc/assets.php",
-    "loaded_by": "functions.php enqueue",
-    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+    "loaded_by": "functions.php enqueue \u2192 Design::css \u2192 parent inline tokens \u2192 parent/child CSS",
+    "proof": "tests/admin.test.mjs; tests/project.test.mjs; browser computed styles desktop/mobile; tests/runtime-package.php; tests/build.test.mjs"
   },
   {
     "source": "packages/falcon-theme/inc/data.php",
@@ -234,8 +234,8 @@
     "source": "packages/falcon-plugin/src/Updates/GitHubClient.php",
     "package": "plugin",
     "path": "src/Updates/GitHubClient.php",
-    "loaded_by": "Dashboard check/apply release -> UpdateManager -> GitHubClient",
-    "proof": "tests/update.php (WP plugin/theme upgrader, mocked GitHub); tests/update-policy.php; tests/admin.test.mjs; private GitHub acceptance pending"
+    "loaded_by": "Core UpdateManager / ProjectManager (isolated token/manifest)",
+    "proof": "tests/update.php; tests/project-update.php (mock GitHub; signed redirect credential isolation); live acceptance pending"
   },
   {
     "source": "packages/falcon-plugin/src/Updates/UpdateManager.php",
@@ -285,5 +285,26 @@
     "path": "assets/builder.js",
     "loaded_by": "Builder admin_enqueue_scripts",
     "proof": "browser builder interaction; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-theme/inc/design.php",
+    "package": "theme",
+    "path": "inc/design.php",
+    "loaded_by": "functions.php \u2192 Dashboard design form / Settings locked save \u2192 assets inline CSS (also without FP)",
+    "proof": "tests/design.php; tests/admin.test.mjs; tests/project.test.mjs; tests/runtime-package.php"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Updates/ProjectManager.php",
+    "package": "plugin",
+    "path": "src/Updates/ProjectManager.php",
+    "loaded_by": "Dashboard project connection/check/apply \u2192 scoped GitHubClient \u2192 project manifest \u2192 shared ZIP verifier \u2192 WP Theme_Upgrader",
+    "proof": "tests/project-update.php; tests/admin.test.mjs; tests/immutable.php; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-theme/inc/seo.php",
+    "package": "theme",
+    "path": "inc/seo.php",
+    "loaded_by": "functions.php \u2192 wp_head",
+    "proof": "tests/seo.php (runtime), tests/build.test.mjs (packaging)"
   }
 ]

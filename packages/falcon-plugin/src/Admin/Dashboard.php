@@ -6,10 +6,12 @@ use FalconWF\Health;
 use FalconWF\Audit\Logger;
 use FalconWF\Installer\ThemeInstaller;
 use FalconWF\AI\Policy;
+use FalconWF\Updates\ProjectManager;
 use FalconWF\AI\ProviderClient;
 final class Dashboard {
     private const PAGES = [
         'overview'=>['Ringkasan','fwf_manage_system'], 'content'=>['Content Builder','fwf_manage_modules'],
+        'design'=>['Desain Global','fwf_manage_system'],
         'identity'=>['Identitas & Kontak','fwf_manage_system'], 'modules'=>['Modul','fwf_manage_modules'],
         'connections'=>['Proyek & Koneksi','fwf_manage_connections'], 'ai'=>['AI','fwf_manage_ai'],
         'updates'=>['Pembaruan','fwf_manage_updates'], 'maintenance'=>['Pemeliharaan','fwf_manage_system'],
@@ -61,7 +63,8 @@ final class Dashboard {
                 echo '<p>Judul dan tagline di frontend mengikuti <a href="'.esc_url(admin_url('options-general.php')).'">Settings → General WordPress</a>. Nama berikut disimpan sebagai identitas proyek Falcon.</p>';
                 $this->text('name','Nama identitas proyek',$identity['name']);
                 echo '<p><label for="fwf-contact">Kontak publik</label><br><textarea id="fwf-contact" name="contact" rows="4" maxlength="500">'.esc_textarea($identity['contact']).'</textarea></p>';
-                $this->end('Simpan identitas'); break;
+                $this->end('Simpan identitas'); $this->seo(); break;
+            case 'design': $this->design(); break;
             case 'modules':
                 echo '<p>Jenis konten bawaan dan buatan pengguna dikelola melalui <a href="'.esc_url(admin_url('admin.php?page=falcon-wf-content')).'">Content Builder</a>. Layar ini untuk modul ekstensi yang didaftarkan melalui kode.</p>';
                 $this->start('save_modules',$page);
@@ -75,7 +78,7 @@ final class Dashboard {
                 $this->start('save_repo',$page); $this->text('repo','Repo FWF private: owner/name',(string)get_option('fwf_repo',''));
                 $this->text('release_tag','Tag prerelease (local/staging saja; kosong = stable)',(string)get_option('fwf_update_tag',''),'text',false);
                 echo '<p>Commit/push belum membuat update: GitHub Release harus berisi release-manifest.json dan ZIP komponen dari build commit bersih. Prerelease dipilih lewat tag tertentu, bukan otomatis.</p>';
-                echo '<p>Credential read-only berasal dari FWF_GITHUB_TOKEN server-side. Repo hanya sumber release, bukan runtime frontend. Paket klien belum didukung build ini.</p>'; $this->end('Simpan repo release'); break;
+                echo '<p>Credential read-only berasal dari FWF_GITHUB_TOKEN server-side. Repo hanya sumber release, bukan runtime frontend. Paket proyek memiliki koneksi terpisah di bawah.</p>'; $this->end('Simpan repo release'); $this->projectConnection(); break;
             case 'updates':
                 $this->start('check_updates',$page); $this->end(get_option('fwf_update_tag','')===''?'Periksa private stable release':'Periksa tag prerelease terpilih');
                 echo '<p>Environment: '.esc_html(wp_get_environment_type()).' · Jalur: '.esc_html(get_option('fwf_update_tag','')?:'stable terbaru').'.</p>';
@@ -84,7 +87,7 @@ final class Dashboard {
                     echo '<p>'.esc_html($package['id'].' → '.$package['version']).'</p>';
                     $this->start('apply_update',$page); echo '<input type="hidden" name="package_id" value="'.esc_attr($package['id']).'"><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia dan paket telah diuji pada staging; saya memilih update komponen ini.</label>'; $this->end('Update komponen');
                 }
-                echo '<p>Manual, satu komponen per aksi. Recovery kode mengikuti WordPress upgrader; database tidak dipulihkan otomatis. Distribusi private nyata dan restore rehearsal masih perlu diuji.</p>'; break;
+                echo '<p>Manual, satu komponen per aksi. Recovery kode mengikuti WordPress upgrader; database tidak dipulihkan otomatis. Distribusi private nyata dan restore rehearsal masih perlu diuji.</p>'; $this->projectUpdates(); break;
             case 'maintenance':
                 $this->start('save_maintenance',$page);
                 echo '<p><label><input type="checkbox" name="enabled" value="yes" '.checked(get_option('fwf_maintenance',false),true,false).'> Aktifkan maintenance (HTTP 503). Admin berwenang tetap bisa preview.</label></p><p>Terpisah dari theme default Dalam Pembangunan.</p>';
@@ -97,6 +100,66 @@ final class Dashboard {
                 echo '<p>Belum tersedia pada build ini. Private release/update memerlukan repo target, autentikasi terbatas dan pengujian recovery. Tidak ada koneksi atau update production yang dijalankan.</p>'; break;
         }
         echo '</div>';
+    }
+    private function projectConnection(): void {
+        $connection=ProjectManager::connection();echo '<section class="fwf-panel"><h2>Paket desain proyek</h2><p>Satu child theme per koneksi situs. Repo menyimpan desain/template; konten dan pengaturan desain tetap di situs. Pemasangan tidak mengaktifkan theme.</p>';
+        $this->start('save_project','connections');
+        $this->text('project_repo','Repo desain klien: owner/name',$connection['repo']??'');
+        $this->text('project_id','Project ID di project-manifest.json',$connection['project_id']??'');
+        $this->text('theme_id','Slug folder child theme',$connection['theme_id']??'');
+        $this->text('project_tag','Tag prerelease (local/staging; kosong = stable)',$connection['tag']??'','text',false);
+        echo '<p>Token read-only repo proyek memakai FWF_PROJECT_GITHUB_TOKEN server-side. Jangan masukkan token ke form. Release proyek berisi project-manifest.json dan ZIP child theme dari commit bersih.</p>';
+        $this->end('Simpan koneksi proyek');
+        if ($connection) { $this->start('disconnect_project','connections');echo '<p>Putus koneksi mempertahankan file theme, konten dan pengaturan desain.</p>';$this->end('Putus koneksi proyek'); }
+        echo '</section>';
+    }
+    private function projectUpdates(): void {
+        $connection=ProjectManager::connection();echo '<section class="fwf-panel"><h2>Paket desain proyek</h2>';
+        if (!$connection) { echo '<p>Isi repo dan identitas paket di <a href="'.esc_url(admin_url('admin.php?page=falcon-wf-connections')).'">Proyek &amp; Koneksi</a> terlebih dahulu.</p></section>';return; }
+        $theme=wp_get_theme($connection['theme_id']??'');
+        echo '<p>Repo: '.esc_html($connection['repo']??'').' · Theme: '.esc_html($connection['theme_id']??'').' · Terpasang: '.esc_html($theme->exists()?$theme->get('Version'):'belum').'.</p>';
+        $this->start('check_project','updates');$this->end('Periksa paket proyek');
+        $candidate=get_option('fwf_project_candidate',[]);$p=$candidate['manifest']['packages'][0]??null;
+        if (is_array($p) && ($candidate['connection']??null)===$connection) {
+            echo '<p>Target: '.esc_html($p['id'].' → '.$p['version']).'. Checksum, identitas dan kompatibilitas FP/FT telah diperiksa; diperiksa ulang saat apply.</p>';
+            $this->start('apply_project','updates');echo '<p><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia, paket telah diuji pada staging, dan saya memilih memasang/memperbarui file desain ini.</label></p>';$this->end($theme->exists()?'Perbarui desain proyek':'Pasang desain proyek');
+        }
+        if ($theme->exists()) { echo '<p><a href="'.esc_url(admin_url('themes.php?theme='.rawurlencode($connection['theme_id']))).'">Lihat theme / Live Preview</a>. Pilih aktivasi melalui Appearance → Themes sebagai aksi manusia terpisah.</p>'; }
+        echo '<p>Edit kode langsung pada child theme akan terganti saat update. Konten, Reading settings dan pilihan theme aktif dipertahankan. Recovery mengikuti WordPress/backup.</p></section>';
+    }
+    private function seo(): void {
+        echo '<section><h2>SEO / GEO dasar</h2>';
+        if (get_template()!=='falcon-theme' || !class_exists('FalconTheme\\Seo')) { echo '<p>Pengaturan tersedia saat Falcon Theme atau child theme aktif.</p></section>'; return; }
+        $this->start('save_seo','identity');
+        echo '<input type="hidden" name="revision" value="'.esc_attr(\FalconTheme\Seo::revision()).'">';
+        echo '<p><label for="fwf-seo-mode">Pemilik metadata tambahan</label><br><select id="fwf-seo-mode" name="seo_mode">';
+        foreach (['external'=>'WordPress / plugin SEO lain (bawaan)','falcon'=>'Falcon: description, Open Graph dan schema dasar'] as $mode=>$label) { echo '<option value="'.esc_attr($mode).'" '.selected(\FalconTheme\Seo::config()['mode'],$mode,false).'>'.esc_html($label).'</option>'; }
+        echo '</select></p><p>Judul, robots dan sitemap mengikuti WordPress. Deskripsi memakai Ringkasan (Excerpt) publik, tanpa menyalin custom fields. Coming-soon, situs private, draft dan halaman berpassword tidak menerima metadata Falcon.</p>';
+        if (\FalconTheme\Seo::delegated()) { echo '<p>Plugin SEO lain terdeteksi: keluaran Falcon ditangguhkan untuk menghindari metadata ganda.</p>'; }
+        echo '<p>Plugin SEO lain yang belum terdeteksi: gunakan mode bawaan. Tidak menjamin ranking atau kemunculan jawaban AI.</p>';
+        $this->end('Simpan SEO'); echo '</section>';
+    }
+    private function design(): void {
+        if (get_template()!=='falcon-theme' || !class_exists('FalconTheme\\Design')) { echo '<p>Desain Global memerlukan Falcon Theme yang kompatibel atau child theme-nya aktif. Pilih melalui <a href="'.esc_url(admin_url('themes.php')).'">Appearance → Themes</a>.</p>'; return; }
+        echo '<p>Pengaturan untuk '.esc_html(wp_get_theme()->get('Name')).'. Berlaku pada seluruh halaman yang memakai token desain Falcon. Kosongkan nilai untuk mengikuti desain bawaan theme. Font memakai font lokal perangkat.</p>';
+        $this->start('save_design','design');
+        echo '<input type="hidden" name="theme" value="'.esc_attr(get_stylesheet()).'"><input type="hidden" name="revision" value="'.esc_attr(\FalconTheme\Design::revision()).'">';
+        $values=\FalconTheme\Design::values();
+        echo '<div class="fwf-design-fields">';
+        foreach (\FalconTheme\Design::fields() as $key=>$field) {
+            $id='fwf-design-'.$key; echo '<p><label for="'.esc_attr($id).'">'.esc_html($field[0]).'</label><br>';
+            if ($field[1]==='font') {
+                echo '<select id="'.esc_attr($id).'" name="design['.esc_attr($key).']"><option value="">Ikuti desain bawaan</option>';
+                foreach (\FalconTheme\Design::fonts() as $font=>[$label]) { echo '<option value="'.esc_attr($font).'" '.selected($values[$key]??'',$font,false).'>'.esc_html($label).'</option>'; } echo '</select>';
+            } else {
+                echo '<input id="'.esc_attr($id).'" name="design['.esc_attr($key).']" value="'.esc_attr($values[$key]??'').'" type="'.($field[1]==='number'?'number':'text').'"'.($field[1]==='number'?' min="'.esc_attr($field[2]).'" max="'.esc_attr($field[3]).'" step="0.01"':' placeholder="#RRGGBB" pattern="#[a-fA-F0-9]{6}" maxlength="7"').'>'.($field[1]==='number'?' <span>Rentang '.esc_html($field[2].'–'.$field[3]).'</span>':'');
+            }
+            echo '</p>';
+        }
+        echo '</div>';
+        echo '<p>Ukuran judul menyesuaikan layar kecil hingga batas maksimum yang dipilih. H1–H6 tetap ditentukan oleh struktur konten, bukan ukuran huruf. Mengosongkan semua field lalu menyimpan mengembalikan desain bawaan.</p>';
+        submit_button('Simpan desain');
+        echo '<p><button type="submit" class="button button-secondary" name="reset_design" value="yes" formnovalidate>Kembalikan desain bawaan</button></p></form>';
     }
     private function setup(): void {
         $theme=wp_get_theme('falcon-theme'); $active=get_stylesheet()==='falcon-theme';
@@ -150,13 +213,17 @@ final class Dashboard {
     }
     public function action(): void {
         $op=sanitize_key(wp_unslash($_POST['operation']??''));
-        $caps=['save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
+        $caps=['save_seo'=>'fwf_manage_system','save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_project'=>'fwf_manage_connections','disconnect_project'=>'fwf_manage_connections','check_project'=>'fwf_manage_updates','apply_project'=>'fwf_manage_updates','save_design'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
         if (!isset($caps[$op]) || !current_user_can($caps[$op])) { Logger::write('admin_denied','FWF_PERMISSION'); wp_die('Tidak diizinkan.', '', ['response'=>403]); }
         check_admin_referer('fwf_'.$op);
         $p=wp_unslash($_POST); $result=true; $proposal='';
         $audit=Logger::write($op,'started'); if (is_wp_error($audit)) { $result=$audit; }
         else {
             switch ($op) {
+                case 'save_project': $result=ProjectManager::save(['repo'=>$p['project_repo']??null,'project_id'=>$p['project_id']??null,'theme_id'=>$p['theme_id']??null,'tag'=>$p['project_tag']??null]); break;
+                case 'disconnect_project': delete_option('fwf_project_connection');delete_option('fwf_project_candidate'); break;
+                case 'check_project': $result=(new ProjectManager())->check(); break;
+                case 'apply_project': $result=(new ProjectManager())->apply(($p['backup']??'')==='yes'); break;
                 case 'save_repo':
                     $repo=sanitize_text_field($p['repo']??'');
                     $tag=is_string($p['release_tag']??'')?trim($p['release_tag']??''):null;
@@ -167,6 +234,8 @@ final class Dashboard {
                 case 'install_theme': $result=(new ThemeInstaller(dirname($this->file)))->install(); break;
                 case 'activate_theme': $result=($p['confirm']??'')==='yes'?(new ThemeInstaller(dirname($this->file)))->activate():new \WP_Error('FWF_PERMISSION','Konfirmasi pergantian theme diperlukan.'); break;
                 case 'skip_setup': update_option('fwf_setup','skipped',false); break;
+                case 'save_design': $result=Settings::saveDesign(($p['reset_design']??'')==='yes'?[]:($p['design']??null),$p['theme']??null,$p['revision']??null); break;
+                case 'save_seo': $result=Settings::saveSeo($p['seo_mode']??null,$p['revision']??null); break;
                 case 'save_identity': $result=Settings::saveIdentity(['name'=>$p['name']??'','contact'=>$p['contact']??'']); break;
                 case 'save_modules': $ids=(array)($p['modules']??[]); if (!empty(\FalconWF\Content\Definitions::all()['types']['fwf_project']['active'])) { $ids[]='projects'; } $result=$this->app->modules->setActive(array_values(array_unique($ids))); break;
                 case 'save_maintenance': update_option('fwf_maintenance',($p['enabled']??'')==='yes',false); break;

@@ -48,10 +48,10 @@ if (action === 'setup') {
       run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/lint.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/update-policy.php']);
-      for (const file of ['integration.php','content.php','builder.php','native-save.php','provider.php','update.php','immutable.php']) {
+      for (const file of ['integration.php','content.php','builder.php','native-save.php','design.php','seo.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
-      for (const test of ['tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
+      for (const test of ['tests/project-update.test.mjs','tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
         const r=spawnSync(process.execPath,[test],{cwd:root,stdio:'inherit'});
         if(r.status!==0) throw new Error(`Integration check failed: ${test} (exit ${r.status ?? 1}).`);
       }

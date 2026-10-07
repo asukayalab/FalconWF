@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini `0.1.0-alpha.3`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP/FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -70,3 +70,25 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Home memakai Page statis yang dipilih manusia atau site title/tagline saat latest-posts. Listing home memakai shortcode FP yang sudah ada; archive memakai main query publish/password-free dan pagination. Tidak mengubah homepage, membuat konten demo atau mengaktifkan child pada instalasi pengguna otomatis.
 - Design tokens CSS per contoh mengatur font judul/body, warna, spacing dan skala heading. System fonts tidak mengirim request font eksternal. Form pengaturan global serta owner metadata SEO lanjutan tetap pekerjaan berikutnya.
 - Test fixture memilih child sementara hanya di Docker lalu restore options, konten fixture dan file child lama. Instalasi contoh sesudah pengujian hanya untuk Live Preview, tanpa Activate & Publish. Batas kompatibilitas minimum parent alpha.3 karena helper password dan robots sudah diperbaiki di versi tersebut.
+
+## Desain Global — Alpha.4
+
+- FT inc/design.php menjadi satu owner contract field/font allowlist/range/validasi, pembacaan dan inline CSS. FP Settings hanya melakukan locked revision-checked persistence; Dashboard menyediakan capability fwf_manage_system + nonce, bukan API AI.
+- Option fwf_design_{stylesheet} disimpan non-autoload per installation/theme. FT/child kompatibel aktif diperlukan untuk form. Tidak membaca/mengubah theme lain; form lama setelah theme/revision berubah ditolak. Tidak mengaktifkan theme saat save.
+- Nilai kosong menghapus override, mengikuti fallback CSS desain proyek. Seluruh payload divalidasi sebelum write; array/injection/unknown fields ditolak. Font lokal empat stack, warna #RRGGBB, angka bounded; tidak menerima arbitrary CSS, URL font atau HTML.
+- Child Reference memakai --fwf-* melalui fallback --reference-*; override tidak bergantung urutan child enqueue dan tetap dirender saat FP deactivated. Template baru harus memakai token ini; arbitrary third-party theme/inline style tidak otomatis diubah.
+- Pengaturan H1–H6 mengatur ukuran visual responsif; tidak mengganti hierarchy markup atau menyediakan SEO/GEO metadata. Reset hanya opsi desain scope aktif; konten dipertahankan.
+
+## Paket proyek — Alpha.5
+
+- ProjectManager owns project connection/manifest/apply, separate from core UpdateManager allowlist. Shared GitHubClient has bounded credential/manifest selectors; core defaults unchanged, project selects FWF_PROJECT_GITHUB_TOKEN/project-manifest.json. Shared Verifier remote replaces core inline ZIP routine; public core facade forwards for compatibility.
+- One configured child theme only. No project plugin or automatic activation. Connection/review on existing screens. Strict clean provenance, release/tag identity, FP/FT ranges, no downgrade, shared update lock and backup/directfs checks. Apply refetches reviewed metadata and uses actual WP Theme_Upgrader; transient restored.
+- Only FP changes in this step; product/FP alpha.5, FT remains alpha.4. Reference remains alpha.2; project build adds required release version to manifest without changing runtime ZIP.
+- Faults in option persistence/check audit invalidate review; final audit failure reports installed code needs review. Test updater writes/failure/retry and cleanup run in separate PHP requests; WordPress restores/deletes temp backups at shutdown. Snapshot/file owner checks and filesystem stat refresh verify final cleanup.
+- Live Github/client/host acceptance remains pending; fixtures do not substitute mandatory live inbound/outbound AI 0.1 gates.
+
+## SEO/GEO dasar — Alpha.6
+
+- FT Seo owns stored mode, revision and public rendering; FP provides capability/nonce/locked revision persistence. Single site-level fwf_seo option, external default. Values retained on disable/deactivation; no AI system tools.
+- Native Page excerpt support is exposed by FT; no parallel per-post SEO metadata editor. Preserve native title/robots/sitemap/singular canonical. Supplemental canonical only latest-posts home. Explicit public excerpts only; no shortcode/content rendering or custom fields copied to metadata. WebPage, home WebSite and Open Graph website describe existing pages, not invented author/organization/article facts.
+- Known SEO plugins and fwf_seo_external_owner filter suppress Falcon output. Other SEO adapters must use external mode; full third-party compatibility matrix pending. No special GEO file/schema or ranking guarantee. Scope/policy documented in SEO.md.

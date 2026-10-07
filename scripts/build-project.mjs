@@ -29,7 +29,7 @@ const style=readFileSync(`${build}/style.css`,'utf8');assert(style.includes(`Tem
 const artifact=`${spec.package.id}-${spec.version}.zip`;
 const zipped=spawnSync('python3',['scripts/zip.py',build,`${output}/${artifact}`,spec.package.id],{stdio:'inherit'});if(zipped.status!==0)throw Error('Project ZIP failed');
 const commit=spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8'}),dirty=spawnSync('git',['status','--porcelain'],{encoding:'utf8'});
-const manifest={schema:1,project_id:spec.project_id,status:spec.status,source_commit:commit.status===0?commit.stdout.trim():null,dirty:dirty.status!==0 || !!dirty.stdout.trim(),source_digest:hash(JSON.stringify(inputs)),packages:[{...spec.package,version:spec.version,artifact,sha256:hash(readFileSync(`${output}/${artifact}`)),min_wp:spec.min_wp,min_php:spec.min_php,compatibility:spec.compatibility}]};
+const manifest={schema:1,project_id:spec.project_id,version:spec.version,status:spec.status,source_commit:commit.status===0?commit.stdout.trim():null,dirty:dirty.status!==0 || !!dirty.stdout.trim(),source_digest:hash(JSON.stringify(inputs)),packages:[{...spec.package,version:spec.version,artifact,sha256:hash(readFileSync(`${output}/${artifact}`)),min_wp:spec.min_wp,min_php:spec.min_php,compatibility:spec.compatibility}]};
 writeFileSync(`${output}/project-manifest.json`,JSON.stringify(manifest,null,2)+'\n');
-writeFileSync(`${output}/build-report.json`,JSON.stringify({inputs,acceptance:'Local reference only; client installer and private distribution pending.'},null,2)+'\n');
+writeFileSync(`${output}/build-report.json`,JSON.stringify({inputs,acceptance:'Local reference only; live client/private distribution acceptance pending.'},null,2)+'\n');
 console.log(`Built local reference: ${output}/${artifact}`);

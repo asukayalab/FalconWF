@@ -1,0 +1,15 @@
+# SEO/GEO metadata contract
+
+Alpha.6 local foundation; no search-engine indexing, rich-result or AI citation guarantee.
+
+FT `inc/seo.php` is the sole Falcon metadata/config/revision owner. FP Settings saves through the human admin boundary (fwf_manage_system, dedicated nonce, revision, shared lock, readback). Site option `fwf_seo` has one mode: `external` (default) or `falcon`. Disabling does not delete content; theme continues rendering saved mode with FP deactivated. Unrelated themes do not load this renderer.
+
+Native WordPress owns title, robots, singular canonical and sitemap. Falcon adds no replacement hooks for those. On latest-posts home only, it supplements the absent native canonical. Falcon mode adds escaped Open Graph website/title/url/site_name and, when present, description from the explicit public native excerpt (home latest-posts uses native tagline). FT exposes native Page excerpt support so humans can fill the same field in the WordPress editor; it does not create a separate SEO metabox/meta schema. It never executes shortcodes or content filters, copies body/custom fields, or invents image/author/organization data. JSON-LD contains WebPage and, on homepage, WebSite with actual public URL/title/description; JSON_HEX_* protects script boundaries. Native title can include site identity while OG uses page title.
+
+Supported: public published/viewable singular routes and latest-posts home. Excluded: private site, admin/feed/preview/search/404/paged/archive, private/draft/future/password posts (even authenticated/unlocked), bundled parent coming-soon. Static home follows its selected public Page. Existing native noindex/password canonical behavior remains WordPress-owned. No per-post overrides, archive schema, breadcrumbs, social image selector, author/article/entity/review data, redirect manager or sitemap replacement in this step.
+
+Automatic delegation signals: WPSEO_VERSION, RANK_MATH_VERSION, AIOSEO_VERSION, SEOPRESS_VERSION, THE_SEO_FRAMEWORK_VERSION. `fwf_seo_external_owner` filter is the adapter boundary. Use external mode for any other metadata owner, child custom SEO or unknown plugin. Detection fixture is not acceptance with installed third-party plugins; their matrix remains pending.
+
+Google documents ordinary SEO eligibility for AI features without a special AI text file/schema. See [AI features](https://developers.google.com/search/docs/appearance/ai-features) and [structured-data policies](https://developers.google.com/search/docs/appearance/structured-data/sd-policies). Page content and descriptions must truthfully describe visible content; operators own editorial accuracy. Markup alone does not guarantee discovery/citation. WordPress [rel_canonical](https://developer.wordpress.org/reference/functions/rel_canonical/) remains the singular owner.
+
+Evidence: tests/seo.php contracts/privacy/persistence; admin.test.mjs actual nonce/capability/opt-in/off; project.test.mjs actual public child/head JSON/single canonical/title/FP deactivation. SEO editor walkthrough and other FWF features will receive a full simple usage manual before 0.1 release; this file is an engineering contract.

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project_id": "falcon-reference",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "status": "development",
   "package": {
     "id": "falcon-reference",
@@ -12,7 +12,7 @@
   "min_php": "8.3",
   "compatibility": {
     "falcon-theme": {
-      "min": "0.1.0-alpha.3",
+      "min": "0.1.0-alpha.4",
       "max_exclusive": "0.2.0"
     },
     "falcon-wf": {
