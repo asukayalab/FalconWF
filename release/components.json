@@ -1,0 +1,9 @@
+{
+  "product": "Falcon WF 0.1",
+  "version": "0.1.0-alpha.2",
+  "min_wp": "6.7",
+  "min_php": "8.3",
+  "plugin": "falcon-wf",
+  "theme": "falcon-theme",
+  "release_status": "development"
+}

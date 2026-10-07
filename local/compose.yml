@@ -1,0 +1,62 @@
+name: falcon-wf-local
+services:
+  db:
+    image: mariadb:10.11@sha256:7db29378d4fdab73f8123bbc2b48905c90d1a4b00cf848b028f1e81e623257f2
+    environment:
+      MARIADB_DATABASE: falcon
+      MARIADB_USER: falcon
+      MARIADB_PASSWORD: ${FWF_DB_PASSWORD:?Generate local/.env first}
+      MARIADB_ROOT_PASSWORD: ${FWF_DB_ROOT_PASSWORD:?Generate local/.env first}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  wordpress:
+    image: wordpress:php8.3-apache@sha256:e04cf657f24889e96b5544828cdd5a92a0b51819f3e1899183f9be6ea0485edf
+    ports:
+      - "127.0.0.1:8091:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: falcon
+      WORDPRESS_DB_PASSWORD: ${FWF_DB_PASSWORD}
+      WORDPRESS_DB_NAME: falcon
+      WORDPRESS_DEBUG: '1'
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('WP_DEBUG_DISPLAY', false);
+        define('WP_DEBUG_LOG', true);
+        define('FS_METHOD', 'direct');
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - wordpress:/var/www/html
+      - ../dist:/artifacts:ro
+      - ../tests:/fwf-tests:ro
+      - ../examples:/fwf-examples:ro
+  cli:
+    image: wordpress:cli-php8.3@sha256:36243da432a0f0a3b56dc3240ecee9b159108d71305e7c064d987a20a465bfde
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: falcon
+      WORDPRESS_DB_PASSWORD: ${FWF_DB_PASSWORD}
+      WORDPRESS_DB_NAME: falcon
+      WORDPRESS_DEBUG: '1'
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('FS_METHOD', 'direct');
+    volumes:
+      - wordpress:/var/www/html
+      - ../dist:/artifacts:ro
+      - ../tests:/fwf-tests:ro
+      - ../examples:/fwf-examples:ro
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  database:
+  wordpress:

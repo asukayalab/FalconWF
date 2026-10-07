@@ -1,0 +1,19 @@
+{
+  "name": "falcon-wf",
+  "version": "0.1.0-alpha.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build-release.mjs",
+    "verify": "node scripts/check-connections.mjs && node --test tests/build.test.mjs",
+    "local:setup": "node scripts/local.mjs setup",
+    "local:up": "node scripts/local.mjs up",
+    "local:down": "node scripts/local.mjs down",
+    "local:install": "node scripts/local.mjs install",
+    "test:integration": "node scripts/local.mjs test",
+    "local:seed": "node scripts/local.mjs seed"
+  }
+}

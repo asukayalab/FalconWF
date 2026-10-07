@@ -1,0 +1,289 @@
+[
+  {
+    "source": "packages/falcon-plugin/autoload.php",
+    "package": "plugin",
+    "path": "autoload.php",
+    "loaded_by": "falcon-wf.php",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/falcon-wf.php",
+    "package": "plugin",
+    "path": "falcon-wf.php",
+    "loaded_by": "WordPress plugin loader",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/AgentTools.php",
+    "package": "plugin",
+    "path": "src/AI/AgentTools.php",
+    "loaded_by": "MCP tools/call",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/InboundAuth.php",
+    "package": "plugin",
+    "path": "src/AI/InboundAuth.php",
+    "loaded_by": "plugin entrypoint auth hook / REST permission",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/Policy.php",
+    "package": "plugin",
+    "path": "src/AI/Policy.php",
+    "loaded_by": "AgentTools / Dashboard grant/revoke",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/ProviderClient.php",
+    "package": "plugin",
+    "path": "src/AI/ProviderClient.php",
+    "loaded_by": "Dashboard suggest/apply",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/RequestGuard.php",
+    "package": "plugin",
+    "path": "src/AI/RequestGuard.php",
+    "loaded_by": "AgentTools / Bootstrap cleanup",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Admin/Dashboard.php",
+    "package": "plugin",
+    "path": "src/Admin/Dashboard.php",
+    "loaded_by": "Bootstrap admin hooks",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Api/Routes.php",
+    "package": "plugin",
+    "path": "src/Api/Routes.php",
+    "loaded_by": "Bootstrap rest_api_init",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Audit/Logger.php",
+    "package": "plugin",
+    "path": "src/Audit/Logger.php",
+    "loaded_by": "Lifecycle / mutations / Dashboard",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Bootstrap.php",
+    "package": "plugin",
+    "path": "src/Bootstrap.php",
+    "loaded_by": "plugins_loaded",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Content/Repository.php",
+    "package": "plugin",
+    "path": "src/Content/Repository.php",
+    "loaded_by": "Bootstrap / REST / AgentTools / ProviderClient",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Content/Schema.php",
+    "package": "plugin",
+    "path": "src/Content/Schema.php",
+    "loaded_by": "Registry register / Repository / ContentEditor / MCP discovery and field policy",
+    "proof": "tests/content.php; tests/admin.test.mjs; tests/mcp.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Health.php",
+    "package": "plugin",
+    "path": "src/Health.php",
+    "loaded_by": "Dashboard / health REST route",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Installer/ThemeInstaller.php",
+    "package": "plugin",
+    "path": "src/Installer/ThemeInstaller.php",
+    "loaded_by": "Dashboard explicit install/switch actions",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Lifecycle.php",
+    "package": "plugin",
+    "path": "src/Lifecycle.php",
+    "loaded_by": "activation/deactivation callbacks",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Maintenance.php",
+    "package": "plugin",
+    "path": "src/Maintenance.php",
+    "loaded_by": "Bootstrap template_redirect",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Modules/Registry.php",
+    "package": "plugin",
+    "path": "src/Modules/Registry.php",
+    "loaded_by": "Bootstrap init / Dashboard",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Packages/Lock.php",
+    "package": "plugin",
+    "path": "src/Packages/Lock.php",
+    "loaded_by": "ThemeInstaller / Repository / RequestGuard",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Packages/Verifier.php",
+    "package": "plugin",
+    "path": "src/Packages/Verifier.php",
+    "loaded_by": "ThemeInstaller",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Settings.php",
+    "package": "plugin",
+    "path": "src/Settings.php",
+    "loaded_by": "Dashboard / FalconTheme identity",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/uninstall.php",
+    "package": "plugin",
+    "path": "uninstall.php",
+    "loaded_by": "WordPress uninstall",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/404.php",
+    "package": "theme",
+    "path": "404.php",
+    "loaded_by": "WordPress 404 template hierarchy",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/footer.php",
+    "package": "theme",
+    "path": "footer.php",
+    "loaded_by": "get_footer",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/front-page.php",
+    "package": "theme",
+    "path": "front-page.php",
+    "loaded_by": "WordPress front page template hierarchy",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/functions.php",
+    "package": "theme",
+    "path": "functions.php",
+    "loaded_by": "WordPress theme loader",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/header.php",
+    "package": "theme",
+    "path": "header.php",
+    "loaded_by": "get_header",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/inc/assets.php",
+    "package": "theme",
+    "path": "inc/assets.php",
+    "loaded_by": "functions.php enqueue",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/inc/data.php",
+    "package": "theme",
+    "path": "inc/data.php",
+    "loaded_by": "functions.php / header/footer",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/inc/setup.php",
+    "package": "theme",
+    "path": "inc/setup.php",
+    "loaded_by": "functions.php",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/index.php",
+    "package": "theme",
+    "path": "index.php",
+    "loaded_by": "WordPress fallback template hierarchy",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/style.css",
+    "package": "theme",
+    "path": "style.css",
+    "loaded_by": "WordPress theme discovery",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-theme/template-parts/coming-soon.php",
+    "package": "theme",
+    "path": "template-parts/coming-soon.php",
+    "loaded_by": "front-page get_template_part",
+    "proof": "tests/integration.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Updates/GitHubClient.php",
+    "package": "plugin",
+    "path": "src/Updates/GitHubClient.php",
+    "loaded_by": "Dashboard check/apply release -> UpdateManager -> GitHubClient",
+    "proof": "tests/integration.php; private GitHub acceptance pending"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Updates/UpdateManager.php",
+    "package": "plugin",
+    "path": "src/Updates/UpdateManager.php",
+    "loaded_by": "Dashboard check/apply release -> UpdateManager -> GitHubClient",
+    "proof": "tests/integration.php; private GitHub acceptance pending"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Migrations/Runner.php",
+    "package": "plugin",
+    "path": "src/Migrations/Runner.php",
+    "loaded_by": "Lifecycle / Bootstrap -> schema initialization",
+    "proof": "tests/integration.php migration retry/preserve"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Admin/ContentEditor.php",
+    "package": "plugin",
+    "path": "src/Admin/ContentEditor.php",
+    "loaded_by": "Bootstrap / Dashboard content -> human fields action",
+    "proof": "tests/content.php; tests/admin.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Content/Definitions.php",
+    "package": "plugin",
+    "path": "src/Content/Definitions.php",
+    "loaded_by": "Bootstrap initialization / Builder / Registry / Schema",
+    "proof": "tests/builder.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Content/Listing.php",
+    "package": "plugin",
+    "path": "src/Content/Listing.php",
+    "loaded_by": "Bootstrap shortcode -> public published query",
+    "proof": "tests/builder.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Admin/Builder.php",
+    "package": "plugin",
+    "path": "src/Admin/Builder.php",
+    "loaded_by": "Bootstrap admin hooks / Dashboard builder screen",
+    "proof": "tests/builder.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/assets/src/builder.js",
+    "package": "plugin",
+    "path": "assets/builder.js",
+    "loaded_by": "Builder admin_enqueue_scripts",
+    "proof": "browser builder interaction; tests/build.test.mjs"
+  }
+]
