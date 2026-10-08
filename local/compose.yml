@@ -29,15 +29,17 @@ services:
         define('WP_DEBUG_DISPLAY', false);
         define('WP_DEBUG_LOG', true);
         define('FS_METHOD', 'direct');
+        define('FWF_BACKUP_DIR', '/fwf-backups');
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - wordpress:/var/www/html
+      - backups:/fwf-backups
       - ../dist:/artifacts:ro
       - ../tests:/fwf-tests:ro
       - ../examples:/fwf-examples:ro
-  cli:
+  cli: &fwf-cli
     image: wordpress:cli-php8.3@sha256:36243da432a0f0a3b56dc3240ecee9b159108d71305e7c064d987a20a465bfde
     user: "33:33"
     environment:
@@ -49,14 +51,28 @@ services:
       WORDPRESS_CONFIG_EXTRA: |
         define('WP_ENVIRONMENT_TYPE', 'local');
         define('FS_METHOD', 'direct');
+        define('FWF_BACKUP_DIR', '/fwf-backups');
     volumes:
       - wordpress:/var/www/html
+      - backups:/fwf-backups
       - ../dist:/artifacts:ro
       - ../tests:/fwf-tests:ro
       - ../examples:/fwf-examples:ro
     depends_on:
       db:
         condition: service_healthy
+  backup-worker:
+    <<: *fwf-cli
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "while true; do if wp cron event list --field=hook | grep -qx fwf_backup_step; then wp cron event run fwf_backup_step --quiet; fi; if wp cron event list --field=hook | grep -qx fwf_backup_scheduled; then wp cron event run fwf_backup_scheduled --due-now --quiet; fi; sleep 5; done"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
 volumes:
   database:
   wordpress:
+  backups:

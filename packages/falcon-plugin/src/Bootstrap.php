@@ -17,6 +17,8 @@ final class Bootstrap {
         (new Admin\Dashboard($file, $this))->register();
         (new Admin\Builder($file))->register();
         (new Content\Listing())->register();
+        Backup\Manager::register();
+        Backup\Scheduler::register();
         add_action('fwf_daily_cleanup', [AI\RequestGuard::class, 'cleanup']);
         if (!wp_next_scheduled('fwf_daily_cleanup')) { wp_schedule_event(time()+DAY_IN_SECONDS, 'daily', 'fwf_daily_cleanup'); }
         do_action('fwf_ready', $this);

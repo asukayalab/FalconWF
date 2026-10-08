@@ -17,8 +17,19 @@ let checks=0;const ok=(x,label)=>{assert(x,label);checks++;console.log('PASS:',l
 async function login(actor){const s=session();await s('/wp-login.php');const r=await s('/wp-login.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({log:actor.login,pwd:actor.password,'wp-submit':'Log In',testcookie:'1',redirect_to:base+'/wp-admin/'})});ok(r.status===302,'local fixture login');return s;}
 try{
  const admin=await login(fixtures.administrator);
- const screens=['','-content','-identity','-design','-modules','-connections','-ai','-updates','-maintenance','-audit'];
+ const screens=['','-content','-identity','-backup','-design','-modules','-connections','-ai','-updates','-maintenance','-audit'];
  for(const screen of screens){const r=await admin('/wp-admin/admin.php?page=falcon-wf'+screen);ok(r.status===200 && r.body.includes('class="wrap fwf"') && !r.body.includes('Fatal error'),'admin screen '+(screen||'overview')+' renders');}
+ const backupScreen=await admin('/wp-admin/admin.php?page=falcon-wf-backup');
+ ok(backupScreen.body.includes('name="components[]"') && backupScreen.body.includes('enctype="multipart/form-data"'),'backup supports component selection and local ZIP upload');
+ ok(backupScreen.body.includes('data-bytes=') && backupScreen.body.includes('data-fwf-backup-total') && backupScreen.body.includes('Pengaturan sudah termasuk database') && backupScreen.body.includes('Tugas backup') && backupScreen.body.includes('data-fwf-backup-jobs'),'backup screen shows per-component sizes and deduplicated total');
+ const jobNonce=backupScreen.body.match(/data-fwf-backup-jobs[\s\S]*?data-nonce="([^"]+)"/)?.[1];
+ const jobStatus=await admin('/wp-admin/admin-ajax.php?action=fwf_backup_jobs&_ajax_nonce='+jobNonce);ok(jobStatus.status===200 && JSON.parse(jobStatus.body).success,'backup progress endpoint serves authorized status');
+ const badJobStatus=await admin('/wp-admin/admin-ajax.php?action=fwf_backup_jobs&_ajax_nonce=invalid');ok(badJobStatus.status===403,'backup progress endpoint requires nonce');
+ const backupNonce=backupScreen.body.match(/name="operation" value="create_backup"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];
+ const backupForm={action:'fwf_action',operation:'create_backup',screen:'backup','components[]':'settings',_wpnonce:backupNonce};
+ for (const operation of ['review_recovery','apply_recovery','create_backup','review_backup','restore_backup','import_backup','download_backup','resume_backup','cancel_backup','save_backup_note','review_delete_backup','delete_backup','cancel_delete_backup','save_backup_schedule','save_backup_retention','protect_backup','unprotect_backup']) {
+  const denied=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...backupForm,operation,_wpnonce:'invalid'})});ok(denied.status===403,`backup ${operation} requires dedicated nonce`);
+ }
  const design=await admin('/wp-admin/admin.php?page=falcon-wf-design');
  ok(design.body.includes('name="reset_design" value="yes" formnovalidate'),'design reset control submits explicit intent without HTML field validation');
  const designForm={action:'fwf_action',operation:'save_design',screen:'design',theme:design.body.match(/name="theme" value="([^"]+)"/)?.[1],revision:design.body.match(/name="revision" value="([^"]+)"/)?.[1],_wpnonce:design.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1],'design[ink]':'#123456','design[body_font]':'system','design[h1]':'64'};
@@ -84,6 +95,9 @@ try{
  ok(r.status===302 && r.location.includes('falcon-wf-identity'),'authorized identity action redirects to screen');
  r=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_identity',name:'Bad'})});ok(r.status===403,'missing nonce refused');
  const editor=await login(fixtures.editor);
+ for (const operation of ['review_recovery','apply_recovery','create_backup','review_backup','restore_backup','import_backup','download_backup','resume_backup','cancel_backup','save_backup_note','review_delete_backup','delete_backup','cancel_delete_backup','save_backup_schedule','save_backup_retention','protect_backup','unprotect_backup']) {const denied=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...backupForm,operation})});ok(denied.status===403,`editor backup ${operation} denied`);}
+ const editorJobs=await editor('/wp-admin/admin-ajax.php?action=fwf_backup_jobs&_ajax_nonce='+jobNonce);ok(editorJobs.status===403,'editor cannot inspect private backup progress');
+ const editorMedia=await editor('/wp-admin/admin-ajax.php?action=fwf_backup_media&_ajax_nonce='+jobNonce);ok(editorMedia.status===403,'editor cannot inspect selected backup media');
  const seoDenied=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(seoForm)});ok(seoDenied.status===403,'editor cannot change SEO owner');
  r=await editor('/wp-admin/admin.php?page=falcon-wf-design');ok(r.status===403,'editor cannot open design settings');
  r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(designForm)});ok(r.status===403,'editor direct design mutation denied');

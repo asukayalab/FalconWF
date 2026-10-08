@@ -306,5 +306,47 @@
     "path": "inc/seo.php",
     "loaded_by": "functions.php \u2192 wp_head",
     "proof": "tests/seo.php (runtime), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Backup/Manager.php",
+    "package": "plugin",
+    "path": "src/Backup/Manager.php",
+    "loaded_by": "Dashboard / Bootstrap cron \u2192 autoload",
+    "proof": "tests/backup.php; tests/backup-jobs.test.mjs (runtime), tests/admin.test.mjs (HTTP), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/assets/backup.js",
+    "package": "plugin",
+    "path": "assets/backup.js",
+    "loaded_by": "Dashboard admin_enqueue_scripts",
+    "proof": "tests/backup-size.test.mjs (UI), tests/admin.test.mjs (HTTP), tests/build.test.mjs (packaging)"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Backup/Scheduler.php",
+    "package": "plugin",
+    "path": "src/Backup/Scheduler.php",
+    "loaded_by": "Bootstrap / Lifecycle / Dashboard -> WP-Cron -> Manager queue and terminal job notification",
+    "proof": "tests/backup-schedule.test.mjs; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Backup/MediaSelection.php",
+    "package": "plugin",
+    "path": "src/Backup/MediaSelection.php",
+    "loaded_by": "Manager scoped snapshot/validation/restore; Scheduler policy; Dashboard picker estimate",
+    "proof": "tests/backup-media.test.mjs; tests/backup-http.test.mjs; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Backup/Recovery.php",
+    "package": "plugin",
+    "path": "src/Backup/Recovery.php",
+    "loaded_by": "Manager restore / Dashboard journal review / CLI SHORTINIT rescue",
+    "proof": "tests/backup-recovery.test.mjs; tests/backup.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/rescue.php",
+    "package": "plugin",
+    "path": "rescue.php",
+    "loaded_by": "Human operator PHP CLI --root --inspect / --apply --review --confirm; no HTTP execution",
+    "proof": "tests/backup-recovery.test.mjs; tests/build.test.mjs"
   }
 ]

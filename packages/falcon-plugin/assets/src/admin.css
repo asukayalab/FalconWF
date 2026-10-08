@@ -6,3 +6,9 @@
 .fwf [hidden]{display:none!important}
 
 .fwf-design-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:8px 24px;max-width:1000px}.fwf-design-fields input,.fwf-design-fields select{width:100%;max-width:300px}.fwf-design-fields label{font-weight:600}.fwf-design-fields span{display:block;color:#50575e;font-size:12px}
+.fwf .fwf-backup-summary {line-height:1.7}
+.fwf .fwf-backup-summary code {overflow-wrap:anywhere}
+.fwf .fwf-backup-actions {display:flex;flex-wrap:wrap;gap:8px}
+.fwf .fwf-backup-actions form,.fwf .fwf-backup-actions .submit {margin:0;padding:0}
+.fwf .fwf-backup-card details {margin-top:14px}
+.fwf .fwf-backup-card textarea,#fwf-backup-note {width:100%;max-width:640px}

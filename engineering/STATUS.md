@@ -1,8 +1,8 @@
 # Status implementasi Falcon WF
 
-Build produk/FP/FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build produk/FP: 0.1.0-alpha.14; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
-Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sepuluh layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
+Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
 `release/inventory.json` adalah peta source → path paket → consumer → bukti. Nama file dari dokumen FWF-13 adalah usulan; implementasi menggabungkan tanggung jawab kecil tanpa membuat file/class kosong. Koneksi dinamis dibuktikan lewat integration/HTTP tests, bukan static check saja.
 
@@ -26,7 +26,7 @@ Alpha.5 menambahkan koneksi repo proyek terpisah, check/review/install/update sa
 | Q06 Outbound | Adapter/proposal/review/error/disconnect dapat diuji dengan fixture; real provider request belum tersedia. **Belum lulus gate rilis.** |
 | Q07 Inbound | Node client HTTP MCP initialization/discovery/read/create/edit/revoke lulus lokal. Client target dan staging HTTPS eksternal belum diuji. **Belum lulus gate rilis.** |
 | Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Private release nyata, recovery insiden dan live distribusi paket proyek belum lulus. |
-| Q09 Data | Initial migration retry/settings preserve/nonpurge checks. Backup/restore rehearsal dan RPO/RTO belum tersedia. |
+| Q09 Data | Initial migration retry/settings preserve/nonpurge checks. Fondasi backup/restore local/staging bounded tersedia; fixture tabel kloning menguji pemulihan/rollback. Antrean/progres/retry backup tersedia lokal. Backup berkala lokal tersedia alpha.12 dan media terpilih alpha.13; journal/rescue terputus lokal tersedia alpha.14; cloud, host rehearsal dan RPO/RTO belum tersedia. |
 | Q10 UX | Frontend/default, child homepage/detail Project pada desktop/HP dan admin lokal direview browser; status ukuran dan bukti aktual di EVIDENCE. HTTP admin menguji human fields/nonce/stale denial. Matrix Safari/Android, seluruh keyboard flow dan host belum lengkap. |
 | Q11 Panduan pengguna | Panduan lengkap FWF 0.1 (pengisian/aktivasi koneksi core, proyek dan dua arah AI, desain, SEO serta recovery) belum dibuat; disiapkan menjelang rilis sesuai permintaan user. |
 
@@ -41,3 +41,19 @@ Alpha.5 menambahkan koneksi repo proyek terpisah, check/review/install/update sa
 Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote private asukayalab/FalconWF dan runtime lokal sudah memakai mount clone. Belum ada release/update acceptance nyata atau provider request berbayar; pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.
 
 Alpha.6 menyediakan SEO/GEO metadata dasar opt-in melalui Identitas & Kontak. FT owns renderer/config; native WordPress title/canonical/robots/sitemap dipertahankan. Public singular/latest-posts home saja; archive/search/pagination, preview/private/password dan coming-soon tidak mendapat metadata tambahan. Lihat SEO.md. Live search/rich-result/AI citation acceptance tidak diklaim. Panduan pengguna lengkap menjadi deliverable menjelang rilis 0.1, sesuai permintaan user. Desain Global tetap dibekukan; referensi Oxygen Builder diingatkan saat area itu dibahas lagi.
+
+Alpha.7 menambahkan Backup & Restore lokal: pilihan komponen, ZIP tanpa password, private volume, download/import/review dan human confirmed restore dengan safety snapshot. Batas dan exclusions wajib dibaca di BACKUP.md; bukan backup seluruh server/account atau kelulusan disaster recovery production. Jadwal/retensi/media terpilih/Google Drive masih tahap berikutnya.
+
+Alpha.8 menambahkan estimasi tiap komponen dan total pilihan tanpa double count settings/database. Fixed64MiB files dan32MiB DB dilepas; file diproses stream dan row DB diekspor per batch ke JSONL. Batas resource/timeout/upload hosting tetap berlaku; persistent jobs, crash recovery, jadwal dan cloud belum selesai. Kontrak terkini: BACKUP.md.
+
+Alpha.9 menambahkan antrean backup latar belakang WP-Cron, checkpoint ZIP perbagian, progres polling dengan nonce/capability, lanjutkan/coba lagi dan pembatalan. Snapshot DB tetap satu transaksi; snapshot terputus diulang, tahap ZIP diteruskan dari snapshot privat. Backup keselamatan restore memakai mesin yang sama. Ini tidak menyelesaikan crash rescue restore atau ketergantungan waktu eksekusi per snapshot/entry; cron server dan hosting matrix tetap perlu diuji.
+
+Alpha.10 merapikan daftar backup dua baris (tanggal/jam, filename+size), catatan admin/klien, tombol Download ZIP/Restore/Delete. Catatan terlindung dari rewind restore. Delete membutuhkan review/hash/konfirmasi dan tidak menghapus konten situs; lease/journal/active-job guards tetap berlaku.
+
+Alpha.11 menambahkan retensi opt-in dan perlindungan arsip. Default tidak aktif, jumlah awal5 (rentang1–1000). Setelah ZIP background baru tervalidasi, arsip biasa tertua dipangkas; arsip bergembok tidak masuk kuota. Save/unprotect tidak langsung menghapus. Backup keselamatan sinkron tidak memicu retensi. Tombol keempat Lindungi backup ini/Lepas Perlindungan dan Delete disabled untuk arsip terlindungi. Urutan berikutnya: BACKUP-ROADMAP.md.
+
+Alpha.12 menambahkan backup harian/mingguan, jam/hari, komponen, zona waktu WordPress saat save, jadwal berikutnya dan riwayat hasil. Scheduler hanya memanggil Manager queue; retensi/protection tetap sama. Slot terlambat satu susulan, overlap dilewati, generation/durable claim mencegah duplikat. Izin pemilik dicabut memblokir jadwal; deaktivasi mempertahankan data, aktivasi mengatur kembali event. Unknown scheduler crash gap tetap perlu operator review. Worker Docker memakai due-now untuk hook berkala. Cloud/media terpilih/recovery hosting tetap berikutnya.
+
+Alpha.13 menambahkan pilihan attachment melalui Media Library pada backup manual dan berkala, estimasi file/dependensi/metadata, serta restore terbatas pada attachment terpilih. Original, thumbnail, edit-backup dan cover ikut; canonical native metadata dipulihkan, custom metadata plugin dipertahankan. Media terpilih tidak digabung database seluruh situs. Safety archive tetap database/uploads lengkap; schema3/exact-code restore berlaku. Crash rescue dan cloud berikutnya.
+
+Alpha.14 mengganti file-journal lama dengan checkpoint privat signed/atomic sebelum write, penanda commit dalam transaksi DB yang sama dan lease koneksi MariaDB. Restore terputus direview/dikonfirmasi manusia: sebelum commit undo file; commit terbukti mempertahankan hasil lalu cleanup. CLI rescue SHORTINIT melewati plugin/theme normal. Pergantian koneksi/hasil DB tak pasti tetap diblokir untuk operator; tidak ada replay SQL/auto theme switch. Core/config/DB/drop-in rusak, power loss dan host matrix belum disertifikasi.

@@ -1,0 +1,36 @@
+<?php
+use FalconWF\Backup\Manager as B;
+use FalconWF\Backup\Recovery as R;
+if(wp_get_environment_type()!=='local')throw new RuntimeException('Local only');require_once WP_PLUGIN_DIR.'/falcon-wf/autoload.php';global $wpdb;
+$mode=$args[0]??'';$owner=$args[1]??'';if(!preg_match('/^[a-f0-9-]{36}$/D',$owner))throw new RuntimeException('Owner required');$key='fwf_backup_recovery_fixture';$must=static function($value){if(is_wp_error($value))throw new RuntimeException($value->get_error_message());return $value;};
+if($mode==='setup'){
+ if(get_option($key,false)!==false)throw new RuntimeException('Previous fixture requires explicit recovery');$original=$wpdb->prefix;$prefix='fwbt_'.bin2hex(random_bytes(5)).'_';$directory=FWF_BACKUP_DIR.'/recovery-test-'.$owner;$plugin='fwf-recovery-fixture-'.$owner;$folder=WP_PLUGIN_DIR.'/'.$plugin;
+ if(file_exists($directory)||file_exists($folder)||!mkdir($directory,0700)||!mkdir($folder,0755))throw new RuntimeException('Fixture collision');$fixture=['owner'=>$owner,'prefix'=>$prefix,'original'=>$original,'directory'=>$directory,'plugin'=>$plugin,'folder'=>$folder,'tables'=>[]];add_option($key,$fixture,'',false);
+ foreach($wpdb->get_col($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($original).'%')) as $source){$target=$prefix.substr($source,strlen($original));if($wpdb->query("CREATE TABLE `$target` LIKE `$source`")===false||$wpdb->query("INSERT INTO `$target` SELECT * FROM `$source`")===false)throw new RuntimeException('Clone failed');$fixture['tables'][]=$target;update_option($key,$fixture,false);}
+ $wpdb->query($wpdb->prepare("UPDATE `{$prefix}usermeta` SET meta_key=CONCAT(%s,SUBSTRING(meta_key,%d)) WHERE meta_key LIKE %s",$prefix,strlen($original)+1,$wpdb->esc_like($original).'%'));$wpdb->query($wpdb->prepare("UPDATE `{$prefix}options` SET option_name=%s WHERE option_name=%s",$prefix.'user_roles',$original.'user_roles'));file_put_contents($folder.'/fatal.php',"<?php // OWNED $owner\n");echo wp_json_encode(['prefix'=>$prefix,'plugin'=>$plugin]);return;
+}
+$fixture=get_option($key);if(!is_array($fixture)||$fixture['owner']!==$owner)throw new RuntimeException('Fixture owner mismatch');
+if($mode==='cleanup'){
+ // Original process, owned clones/archive subtree/fixture plugin only. No actual site rewind.
+ if($wpdb->prefix!==$fixture['original'])throw new RuntimeException('Cleanup requires original prefix');$remove=static function($path)use(&$remove){if(is_link($path))throw new RuntimeException('Symlink fixture');if(is_dir($path)){foreach(new DirectoryIterator($path)as $entry)if(!$entry->isDot())$remove($entry->getPathname());if(!rmdir($path))throw new RuntimeException('Directory cleanup');}elseif(!unlink($path))throw new RuntimeException('File cleanup');};$remove($fixture['directory']);$remove($fixture['folder']);foreach($fixture['tables']as $table){if(!str_starts_with($table,$fixture['prefix'])||$wpdb->query("DROP TABLE `$table`")===false)throw new RuntimeException('Owned table cleanup');}delete_option($key);echo 'Recovery fixture cleaned.';return;
+}
+if($wpdb->prefix!==$fixture['prefix']||FWF_BACKUP_DIR!==$fixture['directory'])throw new RuntimeException('Isolated context mismatch');wp_set_current_user(get_user_by('login','fwf-admin')->ID);$file=$fixture['folder'].'/fatal.php';$bad="<?php throw new RuntimeException('OWNED RECOVERY BOOT FAILURE $owner');\n";$good="<?php // OWNED BEFORE $owner\n";
+if($mode==='archive'){
+ file_put_contents($file,$bad);update_option('fwf_identity',['name'=>'AFTER '.$owner],false);$id=$must(B::create(['settings','plugins']));$fixture['archive']=$id;update_option($key,$fixture,false);file_put_contents($file,$good);$active=get_option('active_plugins',[]);$active[]=$fixture['plugin'].'/fatal.php';update_option('active_plugins',array_values(array_unique($active)),false);echo wp_json_encode(['archive'=>$id]);
+}elseif($mode==='crash'){
+ file_put_contents($file,$good);update_option('fwf_identity',['name'=>'BEFORE '.$owner],false);$phase=$args[2];$review=$must(B::inspect($fixture['archive']));add_action('fwf_backup_restore_checkpoint',static function($stage,$id)use($phase){if($stage===$phase){echo wp_json_encode(['journal'=>$id])."\n";exit(71);}},10,2);$must(B::restore($fixture['archive'],$review['sha256'],$review['revision'],true));throw new RuntimeException('Crash checkpoint did not execute');
+}elseif($mode==='connection_loss' || $mode==='ack_error'){
+ file_put_contents($file,$good);update_option('fwf_identity',['name'=>'BEFORE '.$owner],false);$review=$must(B::inspect($fixture['archive']));$phase=$mode==='connection_loss'?'database_written':'commit_ack';add_action('fwf_backup_restore_checkpoint',static function($stage)use($phase,$mode,$wpdb){if($stage!==$phase)return;if($mode==='connection_loss'){$wpdb->close();$wpdb->db_connect();}else throw new RuntimeException('OWNED ACK ERROR');},10,1);$result=B::restore($fixture['archive'],$review['sha256'],$review['revision'],true);echo wp_json_encode(['error'=>is_wp_error($result),'message'=>is_wp_error($result)?$result->get_error_message():'']);
+}elseif($mode==='status'){
+ $markers=$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE 'fwf_backup_restore_commit_%'");echo wp_json_encode(['identity'=>get_option('fwf_identity')['name']??'','bad'=>file_get_contents($file)===$bad,'edited'=>str_contains(file_get_contents($file),'OWNED NEW EDIT'),'pending'=>R::pending(),'markers'=>(int)$markers,'lock'=>get_option('fwf_lock_updates',false)!==false,'retired'=>count(glob(FWF_BACKUP_DIR.'/completed-restore-*')?:[]),'queue_denied'=>R::pending()?is_wp_error(B::queue(['settings'],false)):false]);
+}elseif($mode==='fixplugin'){file_put_contents($file,$good);echo 'Owned fixture plugin repaired.';
+}elseif($mode==='drift'){file_put_contents($file,"<?php // OWNED NEW EDIT $owner\n");echo 'Owned new edit.';
+}elseif($mode==='repairdrift'){file_put_contents($file,$bad);echo 'Owned after bytes restored.';
+}elseif($mode==='guards'){
+ $id=R::pending()[0];$review=$must(B::recovery($id));$checks=0;$ok=static function($value,$label)use(&$checks){if(!$value)throw new RuntimeException($label);echo "PASS: $label\n";$checks++;};
+ $ok(is_wp_error(B::recovery($id,$review['review'],false)),'recovery requires explicit confirmation');$ok(is_wp_error(B::recovery($id,str_repeat('0',64),true)),'recovery rejects stale review hash');$ok(is_wp_error(B::recovery('../bad')),'recovery rejects journal traversal');
+ $deny=static function($caps){$caps['fwf_manage_system']=false;return $caps;};add_filter('user_has_cap',$deny);$ok(is_wp_error(B::recovery($id)),'recovery retains system capability');remove_filter('user_has_cap',$deny);
+ $path=FWF_BACKUP_DIR.'/restore-'.$id.'/state.json';$raw=file_get_contents($path);file_put_contents($path,$raw.'BROKEN');$ok(is_wp_error(B::recovery($id)),'corrupt journal refuses recovery');file_put_contents($path,$raw);
+ $lock=get_option('fwf_lock_updates');update_option('fwf_lock_updates',['owner'=>wp_generate_uuid4(),'time'=>time()],false);$current=$must(B::recovery($id));$ok(is_wp_error(B::recovery($id,$current['review'],true)),'foreign update lock blocks recovery before file mutation');update_option('fwf_lock_updates',$lock,false);
+ echo "Recovery guard checks passed: $checks.\n";
+}else throw new RuntimeException('Unknown fixture mode');

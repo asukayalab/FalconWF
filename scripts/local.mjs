@@ -29,7 +29,7 @@ if (action === 'setup') {
   console.log('Local credentials prepared in ignored local/.env (not printed).');
 } else {
   if (!existsSync(envFile)) throw new Error('Run npm run local:setup first.');
-  if (action === 'up') run(['up','-d','wordpress']);
+  if (action === 'up') run(['up','-d','wordpress','backup-worker']);
   else if (action === 'seed') run(['run','--rm','cli','wp','eval-file','/fwf-examples/content/seed.php']);
   else if (action === 'down') run(['stop']);
   else if (action === 'install') {
@@ -44,19 +44,23 @@ if (action === 'setup') {
   } else if (action === 'test') {
     const guardCheck=spawnSync(process.execPath,['tests/harness.test.mjs'],{cwd:root,stdio:'inherit'});
     if (guardCheck.status!==0) throw new Error('State recovery regression failed.');
-    withSiteState(()=>{
+    const workerProbe=spawnSync('docker',['compose','--env-file',envFile,'-f',path.join(root,'local/compose.yml'),'ps','--status','running','--services','backup-worker'],{cwd:root,encoding:'utf8'});
+    if (workerProbe.status!==0) throw new Error('Backup worker state probe failed.');
+    const workerWasRunning=workerProbe.stdout.trim()==='backup-worker';
+    if (workerWasRunning) run(['stop','backup-worker']);
+    try { withSiteState(()=>{
       run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/lint.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/update-policy.php']);
-      for (const file of ['integration.php','content.php','builder.php','native-save.php','design.php','seo.php','provider.php','update.php','immutable.php']) {
+      for (const file of ['integration.php','content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
-      for (const test of ['tests/project-update.test.mjs','tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
+      for (const test of ['tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
         const r=spawnSync(process.execPath,[test],{cwd:root,stdio:'inherit'});
         if(r.status!==0) throw new Error(`Integration check failed: ${test} (exit ${r.status ?? 1}).`);
       }
       run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
-    });
+    }); } finally { if (workerWasRunning) run(['start','backup-worker']); }
   }
   else throw new Error('Unknown local command.');
 }
