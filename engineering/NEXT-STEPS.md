@@ -6,7 +6,7 @@ Keputusan pengguna 8 Oktober 2026: otomatisasi rilis dan tesnya dikerjakan paral
 
 - Push main memicu verifikasi, integration WordPress terisolasi dan build dari commit bersih. Versi baru menjadi GitHub prerelease dengan manifest, FP ZIP, FT ZIP dan catatan perubahan. Versi yang sudah terbit tidak ditimpa.
 - Uji kegagalan, benturan tag, provenance dan hash sebelum publikasi. Eksekusi GitHub Actions nyata harus dibuktikan sesudah workflow di-push; tes adapter lokal bukan bukti penerbitan GitHub.
-- Trial alpha.15 → alpha.16 pada ar.obie.my.id: backup, periksa, update FP, cek admin/konten/theme aktif, update FT bila diperlukan. Sesudah itu jalur Uji coba menemukan versi berikutnya tanpa mengetik tag.
+- Pengguna melaporkan `ar.obie.my.id` sudah diperbarui manual ke alpha.16; verifikasi versi/runtime hosting belum dilakukan independen. Cek admin, konten dan theme aktif. Pada prerelease berikutnya, trial jalur Uji coba: backup, periksa, update FP, cek ulang, dan update FT bila ada versi baru. Jalur itu harus menemukan versi berikutnya tanpa mengetik tag; pemasangan manual alpha.16 belum membuktikannya.
 
 ## 2. Kebutuhan desain website
 
