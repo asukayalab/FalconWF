@@ -25,13 +25,17 @@ final class UpdateManager {
         }
         if(!$packages){return new \WP_Error('FWF_PACKAGE','Tidak ada paket.');}return $packages;
     }
+    public static function installedVersion(string $id): string {
+        if ($id==='falcon-wf') { require_once ABSPATH.'wp-admin/includes/plugin.php';return (string)(get_plugin_data(WP_PLUGIN_DIR.'/falcon-wf/falcon-wf.php',false,false)['Version']??''); }
+        return $id==='falcon-theme'?(string)wp_get_theme('falcon-theme')->get('Version'):'';
+    }
     public function check(): array|\WP_Error {
         if(!current_user_can('fwf_manage_updates')){return new \WP_Error('FWF_PERMISSION','Tidak diizinkan cek update.');}
         $repo=(string)get_option('fwf_repo','');$tag=(string)get_option('fwf_update_tag','');delete_option('fwf_release_candidate');$release=(new GitHubClient($repo))->release($tag);
         if(is_wp_error($release)){return $release;}
         $packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
         foreach($packages as $p){if(!isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Artifact release hilang.');}}
-        $release['repo']=$repo;$release['selection_tag']=$tag;$release['checked_at']=time(); update_option('fwf_release_candidate',$release,false);
+        $release['repo']=$repo;$release['selection_tag']=$tag;$release['checked_at']=time(); update_option('fwf_release_candidate',$release,false);if(get_option('fwf_release_candidate')!==$release){delete_option('fwf_release_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
         Logger::write('release_check','succeeded');return $packages;
     }
     public function update(string $id, bool $backupConfirmed): true|\WP_Error {
@@ -50,7 +54,7 @@ final class UpdateManager {
             $candidate=get_option('fwf_release_candidate',[]);
             $reviewed=self::validate(is_array($candidate['manifest']??null)?$candidate['manifest']:[],$tag);
             if(($candidate['repo']??null)!==get_option('fwf_repo','') || ($candidate['selection_tag']??null)!==$tag || is_wp_error($reviewed) || ($reviewed[$id]??null)!==$p || ($candidate['tag']??null)!==$release['tag']){return new \WP_Error('FWF_COMPATIBILITY','Release berubah atau belum diperiksa. Periksa ulang dan review versi sebelum update.');}
-            $current=$id==='falcon-wf'?get_plugin_data(WP_PLUGIN_DIR.'/falcon-wf/falcon-wf.php')['Version']:wp_get_theme('falcon-theme')->get('Version');
+            $current=self::installedVersion($id);
             if(!$current || version_compare($current,$p['version'],'>=')){return new \WP_Error('FWF_COMPATIBILITY','Target belum terpasang atau tidak lebih baru. Tidak downgrade.');}
             $tmp=(new GitHubClient((string)get_option('fwf_repo','')))->asset($release['assets'][$p['artifact']],true);if(is_wp_error($tmp)){return $tmp;}
             $verified=self::verifyZip($tmp,$p);if(is_wp_error($verified)){return $verified;}

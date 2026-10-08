@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP `0.1.0-alpha.14`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP `0.1.0-alpha.15`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -20,7 +20,7 @@
 | Limit awal | Inbound 30 tool request/menit/actor. Outbound 20 request/hari/situs, max output 1.200 token/request. Tidak menjanjikan budget rupiah/dolar tanpa harga/model terverifikasi. |
 | Retention | Proposal 24 jam; completed idempotency records 7 hari; audit 30 hari. Daily WP-Cron cleanup. Pending/unknown operations dipertahankan untuk rekonsiliasi manual. Nilai dapat diubah pada tahap policy live. |
 | Error/audit | Stable error codes dan safe messages; audit hanya kolom allowlist, request ID sama dalam satu request PHP. Tidak menyimpan prompt/response/token dalam audit. Pending operation record mencegah retry setelah hasil tidak diketahui. |
-| Private release | Repo owner/name fixed, server-side `FWF_GITHUB_TOKEN` dengan Contents read terbatas ke repo. Manifest stable/clean source, package ID/type/version/runtime/hash diverifikasi. Mendukung asset 200 dan 302; Authorization tidak diteruskan ke signed download host. |
+| Release transport | Repo publik tanpa credential; URL GitHub atau owner/name dinormalisasi. Private opsional memakai `FWF_GITHUB_TOKEN` constant/environment dengan Contents read terbatas ke repo. Manifest stable/clean source, package ID/type/version/runtime/hash diverifikasi. Mendukung asset 200 dan 302; Authorization tidak diteruskan ke signed download host. |
 | Update | Satu komponen per aksi manual, backup/staging confirmation, current/target version dan lock. WP upgrader untuk write/recovery kode; rollback database tidak dijanjikan. Paket proyek dan pipeline immutable belum didukung. |
 | Ekstensi | `fwf_ready` menyediakan Bootstrap setelah plugins_loaded; `fwf_register_modules` pada init menyediakan Registry untuk descriptor proyek. Missing/cyclic dependencies dan duplicate IDs/CPT ditolak. |
 | Git/dokumen | docs dan session-notes lokal saja. engineering memuat kontrak/status/evidence teknis, bukan salinan seluruh referensi atau transcript. Awalnya Git lokal tanpa remote; checkout utama kini remote asukayalab/FalconWF. Publish/release tetap tindakan terpisah. |
@@ -157,3 +157,8 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Terminal committed/rolled_back checkpoint precedes proof/owner-lock cleanup. Journal is atomically retired outside pending namespace before private slot cleanup; interrupted cleanup can leave completed-restore-UUID for operator review/cleanup_only through the same engine; never replay content writes or overwrite newer live bytes. Damaged/empty state still requires direct operator inspection. Original pending journals block new backups and retain update owner lock. Legacy journals are not automatically interpreted/replayed.
 - rescue.php accepts PHP CLI only, SHORTINIT wp-load skips normal plugins/themes, and uses the same Recovery validator/operator action. --inspect supplies a review hash; --apply requires that exact --review plus --confirm. Database/config/core/db/cache drop-ins must still load; a trusted extracted installer can provide clean rescue/autoload/classes if plugin code itself is broken. Local/staging writable, single-site only.
 - Product/FPalpha.14, FTalpha.6. Process-death and bootstrap fixture evidence is local; host power-loss, network/shared filesystem, DBA failover and production RPO/RTO remain separate gates.
+
+## Alpha.15 — updater publik praktis
+
+- Repo asukayalab/FalconWF telah dibuat publik oleh owner; akses API anonim mengonfirmasi private=false. GitHubClient menjadi pemilik normalisasi alamat dan transport anonymous-first. Credential opsional dipakai hanya setelah 401/404 dan tidak dibawa ke signed asset host. Tidak ada layanan aktivasi/distribusi tambahan atau perubahan server wajib untuk publik.
+- UI membandingkan versi aktual melalui UpdateManager::installedVersion, menyembunyikan apply same/older/missing target dan meng-escape catatan release sebagai teks. Metadata divalidasi saat check; paket diunduh dan hash/struktur ZIP diperiksa sebelum write. Update tetap eksplisit satu komponen; prerelease tetap local/staging.

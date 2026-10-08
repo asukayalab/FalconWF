@@ -1,8 +1,8 @@
 # Status implementasi Falcon WF
 
-Build produk/FP: 0.1.0-alpha.14; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build produk/FP: 0.1.0-alpha.15; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
-Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
+Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
 `release/inventory.json` adalah peta source → path paket → consumer → bukti. Nama file dari dokumen FWF-13 adalah usulan; implementasi menggabungkan tanggung jawab kecil tanpa membuat file/class kosong. Koneksi dinamis dibuktikan lewat integration/HTTP tests, bukan static check saja.
 
@@ -25,20 +25,20 @@ Alpha.5 menambahkan koneksi repo proyek terpisah, check/review/install/update sa
 | Q05 Admin/security | Admin/editor HTTP screens/action/nonce serta agent REST/XML-RPC boundaries diuji. Independent security review belum dilakukan. |
 | Q06 Outbound | Adapter/proposal/review/error/disconnect dapat diuji dengan fixture; real provider request belum tersedia. **Belum lulus gate rilis.** |
 | Q07 Inbound | Node client HTTP MCP initialization/discovery/read/create/edit/revoke lulus lokal. Client target dan staging HTTPS eksternal belum diuji. **Belum lulus gate rilis.** |
-| Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Private release nyata, recovery insiden dan live distribusi paket proyek belum lulus. |
+| Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Transport publik sungguhan dan hash/ZIP FPalpha.14/FTalpha.6 terverifikasi tanpa token pada alpha.15. Pemasangan update hosting, recovery insiden dan live distribusi paket proyek belum lulus. |
 | Q09 Data | Initial migration retry/settings preserve/nonpurge checks. Fondasi backup/restore local/staging bounded tersedia; fixture tabel kloning menguji pemulihan/rollback. Antrean/progres/retry backup tersedia lokal. Backup berkala lokal tersedia alpha.12 dan media terpilih alpha.13; journal/rescue terputus lokal tersedia alpha.14; cloud, host rehearsal dan RPO/RTO belum tersedia. |
 | Q10 UX | Frontend/default, child homepage/detail Project pada desktop/HP dan admin lokal direview browser; status ukuran dan bukti aktual di EVIDENCE. HTTP admin menguji human fields/nonce/stale denial. Matrix Safari/Android, seluruh keyboard flow dan host belum lengkap. |
 | Q11 Panduan pengguna | Panduan lengkap FWF 0.1 (pengisian/aktivasi koneksi core, proyek dan dua arah AI, desain, SEO serta recovery) belum dibuat; disiapkan menjelang rilis sesuai permintaan user. |
 
 ## Akses/bahan yang diperlukan untuk kelulusan selanjutnya
 
-- Repo private target dan owner aktual untuk remote/release/update acceptance; jangan mengarang repo.
+- Repo target dan owner aktual untuk remote/release/update acceptance; jangan mengarang repo.
 - Credential OpenAI dan model available, policy privacy/usage live, konfigurasi server-side. Jangan mengirim secret lewat chat.
 - Staging WordPress HTTPS yang dapat dijangkau client, serta pilihan client target (agent generic atau integrasi ChatGPT langsung dengan auth yang didukung).
 - Backup/restore target dan rehearsal; lisensi/notice sebelum distribusi.
 - V8/CV/aset untuk pilot Rizal, terpisah dari core AI.
 
-Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote private asukayalab/FalconWF dan runtime lokal sudah memakai mount clone. Belum ada release/update acceptance nyata atau provider request berbayar; pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.
+Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote asukayalab/FalconWF (publik sejak 8 Oktober 2026) dan runtime lokal sudah memakai mount clone. Belum ada release/update acceptance nyata atau provider request berbayar; pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.
 
 Alpha.6 menyediakan SEO/GEO metadata dasar opt-in melalui Identitas & Kontak. FT owns renderer/config; native WordPress title/canonical/robots/sitemap dipertahankan. Public singular/latest-posts home saja; archive/search/pagination, preview/private/password dan coming-soon tidak mendapat metadata tambahan. Lihat SEO.md. Live search/rich-result/AI citation acceptance tidak diklaim. Panduan pengguna lengkap menjadi deliverable menjelang rilis 0.1, sesuai permintaan user. Desain Global tetap dibekukan; referensi Oxygen Builder diingatkan saat area itu dibahas lagi.
 
@@ -57,3 +57,5 @@ Alpha.12 menambahkan backup harian/mingguan, jam/hari, komponen, zona waktu Word
 Alpha.13 menambahkan pilihan attachment melalui Media Library pada backup manual dan berkala, estimasi file/dependensi/metadata, serta restore terbatas pada attachment terpilih. Original, thumbnail, edit-backup dan cover ikut; canonical native metadata dipulihkan, custom metadata plugin dipertahankan. Media terpilih tidak digabung database seluruh situs. Safety archive tetap database/uploads lengkap; schema3/exact-code restore berlaku. Crash rescue dan cloud berikutnya.
 
 Alpha.14 mengganti file-journal lama dengan checkpoint privat signed/atomic sebelum write, penanda commit dalam transaksi DB yang sama dan lease koneksi MariaDB. Restore terputus direview/dikonfirmasi manusia: sebelum commit undo file; commit terbukti mempertahankan hasil lalu cleanup. CLI rescue SHORTINIT melewati plugin/theme normal. Pergantian koneksi/hasil DB tak pasti tetap diblokir untuk operator; tidak ada replay SQL/auto theme switch. Core/config/DB/drop-in rusak, power loss dan host matrix belum disertifikasi.
+
+Alpha.15: updater repo publik tanpa token, URL GitHub dinormalisasi, perbandingan versi dan catatan release ditampilkan. Transport private opsional fallback 401/404; credential constant/environment dibaca oleh satu GitHubClient. Metadata/refetch/ZIP hash/runtime/nonce/capability serta larangan downgrade dipertahankan. Pemasangan hosting alpha.15 dan update rilis berikutnya masih menunggu tindakan operator.

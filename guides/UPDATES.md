@@ -4,12 +4,14 @@ Commit menyimpan kode lokal; push mengirim kode ke GitHub. WordPress memperbarui
 
 ## Konfigurasi situs
 
-1. Falcon WF → Proyek & Koneksi: isi repo `asukayalab/FalconWF` dalam format owner/name.
-2. Hosting menyediakan `FWF_GITHUB_TOKEN` server-side, credential Contents read yang dibatasi ke repo tersebut. Jangan masukkan token ke kolom repo, Git, ZIP, atau chat.
-3. Tag kosong berarti release stable terbaru. Tag seperti `v0.1.0-alpha.3` berarti satu prerelease tertentu, hanya diterima bila WordPress environment `local` atau `staging`. Environment ditentukan server melalui `WP_ENVIRONMENT_TYPE`; jangan mengganti label situs production agar dapat memasang alpha.
-4. Falcon WF → Pembaruan → Periksa release. Review versi, lakukan backup dan uji staging, lalu pilih satu komponen. Memperbarui FP tidak otomatis memperbarui FT atau mengganti theme aktif.
+1. Falcon WF → Proyek & Koneksi: isi `https://github.com/asukayalab/FalconWF` lalu simpan. Format `asukayalab/FalconWF` juga diterima.
+2. Repo publik tidak memerlukan token, Coolify atau pengaturan server. Tag kosong memilih stable terbaru. Selama trial alpha di local/staging, isi tag tepat, misalnya `v0.1.0-alpha.14`. Prerelease bukan stable; pilihan ini tetap dibatasi environment local/staging.
+3. Falcon WF → Pembaruan → Periksa pembaruan. Lihat versi terpasang, versi tersedia dan catatan perubahan GitHub Release.
+4. Bila ada versi lebih baru, siapkan backup, centang konfirmasi lalu Update komponen. Paket diunduh, metadata/hash/isi ZIP diperiksa, lalu dipasang melalui WordPress. FP dan FT diperbarui terpisah; theme aktif tidak diganti.
 
-Pemasangan alpha.2 lama belum menampilkan kolom tag. Bootstrap fitur ini melalui ZIP build terbaru yang sudah diuji, dengan alur upload/replace plugin WordPress di staging.
+Build alpha.14 dan sebelumnya masih membutuhkan token pada updater. Pasang alpha.15 sekali melalui Plugins → Add New → Upload Plugin → pilih ZIP → Replace current with uploaded. Setelah itu repo publik dapat dipakai tanpa token. Tidak ada pemasangan otomatis tanpa klik manusia.
+
+Dukungan private tetap opsional: credential Contents read terbatas melalui constant atau environment `FWF_GITHUB_TOKEN`; proyek memakai `FWF_PROJECT_GITHUB_TOKEN`. Request dimulai tanpa credential, kemudian fallback hanya jika API menolak akses (401/404). Credential tidak diteruskan ke host download. Tidak ada token di form, Git, ZIP atau chat.
 
 ## Menyiapkan release
 
@@ -19,7 +21,7 @@ Pemasangan alpha.2 lama belum menampilkan kolom tag. Bootstrap fitur ini melalui
 - Buat GitHub Release pada commit yang sama. Untuk prerelease gunakan tag `v` + versi dan tandai prerelease; jangan draft. Unggah tiga asset dari dist: release-manifest.json, ZIP falcon-wf, ZIP falcon-theme. Tidak mengunggah source ZIP sebagai paket instalasi, database, uploads, credential, docs atau session-notes.
 - WordPress staging memilih tag tepat lalu menguji check, FP self-update, FT update, activation state dan konten. Metadata GitHub dan hash paket diperiksa lagi saat apply.
 
-Tidak ada publish GitHub otomatis dari perintah build. Belum ada private release nyata yang dibuktikan pada tahap ini.
+Tidak ada publish GitHub otomatis dari perintah build. Penerbitan release dan pengujian pemasangan hosting tetap tindakan terpisah.
 
 ## Recovery
 
@@ -29,4 +31,4 @@ WP upgrader menangani penggantian/recovery kode sesuai WordPress. FWF tidak menj
 
 ## Bukti dan batas
 
-Fixture integration memanggil WP Plugin_Upgrader dan Theme_Upgrader sungguhan, tetapi metadata/download GitHub disimulasikan. Ini bukti lokal, bukan acceptance distribusi private/hosting atau rehearsal restore insiden production. Live acceptance memerlukan konfigurasi server dan staging HTTPS target.
+Fixture integration memanggil WP Plugin_Upgrader dan Theme_Upgrader sungguhan, tetapi metadata/download GitHub disimulasikan. Ini bukti lokal, bukan acceptance distribusi private/hosting atau rehearsal restore insiden production. Repo publik tidak membutuhkan konfigurasi credential server. Pengujian update hosting dan recovery tetap memerlukan staging HTTPS target.

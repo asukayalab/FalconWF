@@ -9,7 +9,8 @@ final class ProjectManager {
     public static function slug(mixed $value): bool { return is_string($value) && (bool)preg_match('/^[a-z][a-z0-9-]{1,63}$/D',$value) && !in_array($value,['falcon-wf','falcon-theme'],true); }
     public static function save(mixed $input): true|\WP_Error {
         if (!current_user_can('fwf_manage_connections')) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }
-        if (!is_array($input) || array_diff(array_keys($input),['repo','project_id','theme_id','tag']) || !GitHubClient::validRepo(is_string($input['repo']??null)?$input['repo']:'') || !self::slug($input['project_id']??null) || !self::slug($input['theme_id']??null) || !is_string($input['tag']??null)) { return new \WP_Error('FWF_VALIDATION','Isi repo owner/name, project ID dan slug child theme tanpa URL atau credential.'); }
+        if (is_array($input)) { $input['repo']=GitHubClient::normalizeRepo($input['repo']??null); }
+        if (!is_array($input) || array_diff(array_keys($input),['repo','project_id','theme_id','tag']) || !GitHubClient::validRepo(is_string($input['repo']??null)?$input['repo']:'') || !self::slug($input['project_id']??null) || !self::slug($input['theme_id']??null) || !is_string($input['tag']??null)) { return new \WP_Error('FWF_VALIDATION','Isi alamat GitHub, project ID dan slug child theme yang valid.'); }
         $selection=UpdateManager::validateSelection($input['tag']);if(is_wp_error($selection)){return $selection;}
         update_option('fwf_project_connection',$input,false);if(get_option('fwf_project_connection')!==$input){return new \WP_Error('FWF_DB','Koneksi proyek gagal disimpan. Periksa database sebelum retry.');}delete_option('fwf_project_candidate');return true;
     }

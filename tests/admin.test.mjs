@@ -53,14 +53,14 @@ try{
  const connections=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
  ok(connections.body.includes('name="release_tag"') && connections.body.includes('local/staging') && !connections.body.match(/<input[^>]*name="release_tag"[^>]*required/),'release connection explains and renders pinned prerelease field');
  const repoNonce=connections.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];
- let connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'fixture/falcon-wf',release_tag:'v0.1.0-alpha.3',_wpnonce:repoNonce})});
+ let connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'https://github.com/fixture/falcon-wf.git',release_tag:'v0.1.0-alpha.3',_wpnonce:repoNonce})});
  const pinned=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
- ok(connectionResult.status===302 && pinned.body.includes('value="v0.1.0-alpha.3"'),'nonce-protected connection saves selected prerelease tag');
+ ok(connectionResult.status===302 && pinned.body.includes('value="v0.1.0-alpha.3"') && pinned.body.includes('value="fixture/falcon-wf"'),'nonce-protected GitHub URL normalizes and saves selected prerelease tag');
  connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'fixture/falcon-wf',release_tag:'../unsafe',_wpnonce:repoNonce})});
  const rejected=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
  ok(connectionResult.status===302 && rejected.body.includes('value="v0.1.0-alpha.3"'),'invalid release selection preserves previous connection');
  const projectNonce=rejected.body.match(/name="operation" value="save_project"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];
- const projectForm={action:'fwf_action',operation:'save_project',screen:'connections',project_repo:'fixture/client-design',project_id:'falcon-reference',theme_id:'falcon-reference',project_tag:'v0.1.0-alpha.2',_wpnonce:projectNonce};
+ const projectForm={action:'fwf_action',operation:'save_project',screen:'connections',project_repo:'https://github.com/fixture/client-design',project_id:'falcon-reference',theme_id:'falcon-reference',project_tag:'v0.1.0-alpha.2',_wpnonce:projectNonce};
  let projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(projectForm)});
  const projectConnection=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
  ok(projectResult.status===302 && projectConnection.body.includes('value="fixture/client-design"') && projectConnection.body.includes('FWF_PROJECT_GITHUB_TOKEN'),'project connection form stores isolated repo and explains server-side token');
@@ -69,7 +69,7 @@ try{
  ok(projectResult.status===302 && projectRefused.body.includes('value="falcon-reference"'),'project form cannot retarget core theme');
  const projectUpdates=await admin('/wp-admin/admin.php?page=falcon-wf-updates');
  ok(projectUpdates.body.includes('Paket desain proyek') && projectUpdates.body.includes('Periksa paket proyek'),'project check/review flow appears in updates');
- for(const operation of ['save_project','check_project','apply_project','disconnect_project']){
+ for(const operation of ['save_repo','check_updates','apply_update','save_project','check_project','apply_project','disconnect_project']){
   projectResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,operation,_wpnonce:'invalid'})});
   ok(projectResult.status===403,`project ${operation} requires its own nonce`);
  }
@@ -101,7 +101,7 @@ try{
  const seoDenied=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(seoForm)});ok(seoDenied.status===403,'editor cannot change SEO owner');
  r=await editor('/wp-admin/admin.php?page=falcon-wf-design');ok(r.status===403,'editor cannot open design settings');
  r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(designForm)});ok(r.status===403,'editor direct design mutation denied');
- for(const operation of ['save_project','check_project','apply_project','disconnect_project']){r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,operation})});ok(r.status===403,`editor project ${operation} denied`);}
+ for(const operation of ['save_repo','check_updates','apply_update','save_project','check_project','apply_project','disconnect_project']){r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...projectForm,operation})});ok(r.status===403,`editor project ${operation} denied`);}
  r=await editor('/wp-admin/admin.php?page=falcon-wf-content');ok(r.status===403,'editor cannot change content definitions');
  r=await editor('/wp-admin/admin.php?page=falcon-wf-ai');ok(r.status===403,'editor cannot open AI policy page directly');
  r=await editor('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'install_theme',_wpnonce:nonce})});ok(r.status===403,'editor direct install action refused');

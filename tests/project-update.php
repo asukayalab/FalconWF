@@ -3,7 +3,7 @@ if(wp_get_environment_type()!=='local'){throw new RuntimeException('Local only.'
 use FalconWF\Updates\ProjectManager as P;
 use FalconWF\Packages\Verifier as V;
 wp_set_current_user(get_user_by('login','fwf-admin')->ID);
-if(!defined('FWF_PROJECT_GITHUB_TOKEN')){define('FWF_PROJECT_GITHUB_TOKEN','fixture-project-token');}
+putenv('FWF_PROJECT_GITHUB_TOKEN=fixture-project-token');
 require_once ABSPATH.'wp-admin/includes/file.php';require_once ABSPATH.'wp-admin/includes/theme.php';
 $id='falcon-project-fixture';$root=get_theme_root().'/'.$id;$mode=$args[0]??'';$owner=$args[1]??'';$snapshotKey='fwf_project_update_test';
 if(!preg_match('/^[a-f0-9-]{36}$/D',$owner)){throw new RuntimeException('Fixture owner required.');}
@@ -36,7 +36,7 @@ $package=['id'=>$id,'type'=>'theme','parent'=>'falcon-theme','version'=>'0.1.0',
 $manifest=['schema'=>1,'project_id'=>'project-fixture','version'=>'0.1.0','status'=>'stable','dirty'=>false,'source_commit'=>str_repeat('b',40),'packages'=>[$package]];
 $redirect=false;$signed=false;$corrupt=false;$duplicate=false;$prerelease=false;$seenAuth=[];
 $mock=static function($pre,$args,$url) use (&$manifest,$zipPath,&$redirect,&$signed,&$corrupt,&$duplicate,&$prerelease,&$seenAuth){
- if(str_starts_with($url,'https://api.github.com/repos/fixture/client-design/')){$seenAuth[]=$args['headers']['Authorization']??'';}
+ if(str_starts_with($url,'https://api.github.com/repos/fixture/client-design/')){if(!isset($args['headers']['Authorization'])){return ['headers'=>[],'response'=>['code'=>404,'message'=>'private fixture'],'body'=>''];}$seenAuth[]=$args['headers']['Authorization'];}
  $body='';$code=200;$headers=[];
  if(str_contains($url,'/repos/fixture/client-design/releases/latest') || str_contains($url,'/repos/fixture/client-design/releases/tags/')){$assets=[['name'=>'project-manifest.json','id'=>51],['name'=>$manifest['packages'][0]['artifact'],'id'=>52]];if($duplicate){$assets[]=$assets[0];}$body=wp_json_encode(['draft'=>false,'prerelease'=>$prerelease,'tag_name'=>'v'.$manifest['version'],'assets'=>$assets]);}
  elseif(str_ends_with($url,'/assets/51')){$body=wp_json_encode($manifest);}
@@ -60,6 +60,7 @@ try {
   $zip('0.1.2-alpha.1');$manifest['version']='0.1.2-alpha.1';$manifest['status']='development';$manifest['packages'][0]=[...$package,'version'=>'0.1.2-alpha.1','artifact'=>$id.'-0.1.2-alpha.1.zip','sha256'=>hash_file('sha256',$zipPath)];$prerelease=true;$connection['tag']='v0.1.2-alpha.1';
   $ok(P::save($connection)===true && !is_wp_error($manager->check()) && $manager->apply(true)===true,'actual prerelease retry succeeds after separate failed request');echo "Project retry checks passed: $count.\n";return;
  }
+ $ok(P::save([...$connection,'repo'=>'https://github.com/fixture/client-design.git'])===true && P::connection()===$connection,'project GitHub URL normalizes to shared repo identity');
  $ok(P::save($connection)===true,'project connection stored independently');
  $denyStore=static fn($new,$old)=>$old;add_filter('pre_update_option_fwf_project_connection',$denyStore,10,2);
  try{$failed=P::save([...$connection,'project_id'=>'other-project']);}finally{remove_filter('pre_update_option_fwf_project_connection',$denyStore,10);}

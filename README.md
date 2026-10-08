@@ -1,6 +1,6 @@
 # Falcon WF 0.1
 
-Framework WordPress modular milik Asukayalab. Build pengembangan lokal **0.1.0-alpha.14**; belum rilis stable Falcon WF 0.1. Lihat `engineering/STATUS.md` untuk gate yang belum lengkap.
+Framework WordPress modular milik Asukayalab. Build pengembangan lokal **0.1.0-alpha.15**; belum rilis stable Falcon WF 0.1. Lihat `engineering/STATUS.md` untuk gate yang belum lengkap.
 
 - `docs/Falcon-WF-0.1/`: 23 dokumen referensi FWF-00 sampai FWF-22, disimpan lokal dan dikecualikan dari Git.
 - `session-notes/`: seluruh catatan sesi baru dan laporan hasil sesi, disimpan terpisah dari dokumen referensi dan dikecualikan dari Git.
@@ -9,7 +9,7 @@ Gunakan nama catatan `YYYY-MM-DD-NN-topik.md` berdasarkan tanggal WIB. Catatan m
 
 Dokumen membedakan DIKUNCI, USULAN, dan MENUNGGU. Prompt dan instruksi historis di dokumen adalah konteks referensi; tindakan mengikuti permintaan user pada sesi berjalan. Instruksi user tanggal 7 Oktober 2026 bahwa `docs/` tidak masuk GitHub menggantikan rancangan lama yang memasukkan dokumen itu ke repo.
 
-Source berada di `packages/falcon-plugin/` dan `packages/falcon-theme/`; tooling di `scripts/`, QA di `tests/`, metadata/inventory di `release/`, keputusan dan evidence teknis di `engineering/`. `build/` dan `dist/` dihasilkan oleh build dan di-ignore. Checkout utama memakai remote private `asukayalab/FalconWF`. Koneksi Git source berbeda dari credential private updater server; push source tidak membuat release otomatis.
+Source berada di `packages/falcon-plugin/` dan `packages/falcon-theme/`; tooling di `scripts/`, QA di `tests/`, metadata/inventory di `release/`, keputusan dan evidence teknis di `engineering/`. `build/` dan `dist/` dihasilkan oleh build dan di-ignore. Checkout utama memakai remote publik `asukayalab/FalconWF`. Koneksi Git source berbeda dari koneksi updater situs; push source tidak membuat release otomatis.
 
 ## Build dan verifikasi
 
@@ -31,11 +31,11 @@ Untuk clone yang memakai database volume lokal lama, salin `local/.env` lama lan
 
 Preview: http://localhost:8091. Admin: http://localhost:8091/wp-admin, user `fwf-admin`; password dibuat di `local/.env` pada `FWF_ADMIN_PASSWORD` dan tidak dicetak ke terminal. `npm run local:down` menghentikan service tanpa menghapus database/volume. Tidak ada reset/purge otomatis.
 
-Installer: `dist/falcon-wf-0.1.0-alpha.14.zip`. Upload lewat Plugins, aktifkan FP, buka menu Falcon WF, pasang FT bundled, kemudian pilih aktivasi bila diinginkan. Jangan unggah ZIP dokumen. Model filesystem awal direct writable; immutable diblokir dengan arahan pipeline.
+Installer: `dist/falcon-wf-0.1.0-alpha.15.zip`. Upload lewat Plugins, aktifkan FP, buka menu Falcon WF, pasang FT bundled, kemudian pilih aktivasi bila diinginkan. Jangan unggah ZIP dokumen. Model filesystem awal direct writable; immutable diblokir dengan arahan pipeline.
 
-## AI dan private release
+## AI dan pembaruan
 
-Credential production tidak diinput ke browser/repo. Konfigurasi `FWF_OPENAI_API_KEY` dan `FWF_GITHUB_TOKEN` di wp-config/secret store server yang sesuai. Dashboard menampilkan keberadaan credential, bukan nilainya. Pilih model yang benar-benar tersedia; API subscription/billing tidak diasumsikan.
+Credential production tidak diinput ke browser/repo. AI memakai `FWF_OPENAI_API_KEY` di secret store server. Updater repo publik tidak memerlukan token; panduan ada di guides/UPDATES.md. Dashboard menampilkan keberadaan credential, bukan nilainya. Pilih model yang benar-benar tersedia; API subscription/billing tidak diasumsikan.
 
 Outbound mengirim satu field draft terpilih, lalu proposal menunggu review/apply manusia. Inbound menyediakan MCP stateless pada URL `rest_url('falcon-wf/v1/mcp')`; bentuk URL mengikuti permalink aktual. User khusus Falcon Agent + application password UUID + explicit scoped grant diperlukan; HTTPS wajib kecuali environment local. Client harus mendukung HTTP Basic. Koneksi ChatGPT langsung/OAuth belum diverifikasi dan bukan klaim fitur selesai.
 
