@@ -63,3 +63,5 @@ Alpha.15: updater repo publik tanpa token, URL GitHub dinormalisasi, perbandinga
 Alpha.16: sumber core bawaan dan pilihan Stabil/Uji coba menggantikan tag versi manual. Pengaturan trial lama menjadi penemuan prerelease terbaru; apply memeriksa ulang release konkret dan menolak kandidat lama. Koneksi teknis dilipat untuk pengelola. Repo proyek tetap memiliki kontrak pengelola terpisah. Bukti runtime/hosting dicatat terpisah.
 
 Prioritas 8 Oktober: otomatisasi rilis dan tes publikasinya dikerjakan paralel, kemudian trial update/desain/connector AI di ar.obie.my.id. Rizal ditunda sesuai keputusan pengguna. Rincian deliverable dan batas fondasi desain/MCP ada di NEXT-STEPS.md; kedua arah AI tetap wajib untuk 0.1. Workflow GitHub nyata masih menunggu push dan acceptance remote.
+
+Run Actions pertama alpha.16 sudah terpicu tetapi gagal pada guard FT sebelum bundled installer di fresh WordPress. Urutan harness diperbaiki dan fresh isolated bootstrap43checks/hash56/lint53 lulus; penerbitan GitHub tetap menunggu push perbaikan dan run ulang yang berhasil.

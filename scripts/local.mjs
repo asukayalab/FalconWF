@@ -20,6 +20,12 @@ function withSiteState(task) {
     run(['run','--rm','cli','wp','eval-file','/fwf-tests/site-state.php','restore',owner]);
   }
 }
+function checkInstalledRuntime() {
+  // Fresh WordPress has FP only. The existing installer fixture owns FT installation.
+  run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php','plugin']);
+  run(['run','--rm','cli','wp','eval-file','/fwf-tests/integration.php']);
+  run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
+}
 if (action === 'setup') {
   mkdirSync(path.join(root,'dist'), {recursive:true});
   if (!existsSync(envFile)) {
@@ -41,6 +47,8 @@ if (action === 'setup') {
     run(['run','--rm','cli','wp','plugin','install',`/artifacts/falcon-wf-${version}.zip`,'--activate','--force']);
   } else if (action === 'test-state-recovery') {
     withSiteState(()=>run(['run','--rm','cli','wp','eval-file','/fwf-tests/state-failure.php']));
+  } else if (action === 'test-bootstrap') {
+    withSiteState(checkInstalledRuntime);
   } else if (action === 'test') {
     const guardCheck=spawnSync(process.execPath,['tests/harness.test.mjs'],{cwd:root,stdio:'inherit'});
     if (guardCheck.status!==0) throw new Error('State recovery regression failed.');
@@ -49,10 +57,10 @@ if (action === 'setup') {
     const workerWasRunning=workerProbe.stdout.trim()==='backup-worker';
     if (workerWasRunning) run(['stop','backup-worker']);
     try { withSiteState(()=>{
-      run(['run','--rm','cli','wp','eval-file','/fwf-tests/runtime-package.php']);
+      checkInstalledRuntime();
       run(['exec','-T','wordpress','php','/fwf-tests/lint.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/update-policy.php']);
-      for (const file of ['integration.php','content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
+      for (const file of ['content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
       for (const test of ['tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {

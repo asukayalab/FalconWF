@@ -1,7 +1,10 @@
 <?php
 if (wp_get_environment_type()!=='local') { throw new RuntimeException('Local only.'); }
 $manifest=json_decode(file_get_contents('/artifacts/release-manifest.json'),true);$count=0;
+$scope=$args[0]??'all';
+if(!in_array($scope,['all','plugin'],true)){throw new RuntimeException('Unknown runtime check scope.');}
 foreach($manifest['packages'] as $package){
+    if($scope==='plugin' && $package['type']!=='plugin'){continue;}
     $zip=new ZipArchive();if($zip->open('/artifacts/'.$package['artifact'])!==true){throw new RuntimeException('Runtime archive missing.');}
     try{
         $base=$package['type']==='plugin'?WP_PLUGIN_DIR:get_theme_root();$prefix=$package['id'].'/';
@@ -12,4 +15,4 @@ foreach($manifest['packages'] as $package){
         }
     }finally{$zip->close();}
 }
-echo "Installed FP/FT byte hashes match build: $count files\n";
+echo ($scope==='plugin'?'Installed FP':'Installed FP/FT')." byte hashes match build: $count files\n";
