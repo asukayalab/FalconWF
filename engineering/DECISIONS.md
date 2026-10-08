@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP `0.1.0-alpha.15`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP `0.1.0-alpha.16`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -162,3 +162,21 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 
 - Repo asukayalab/FalconWF telah dibuat publik oleh owner; akses API anonim mengonfirmasi private=false. GitHubClient menjadi pemilik normalisasi alamat dan transport anonymous-first. Credential opsional dipakai hanya setelah 401/404 dan tidak dibawa ke signed asset host. Tidak ada layanan aktivasi/distribusi tambahan atau perubahan server wajib untuk publik.
 - UI membandingkan versi aktual melalui UpdateManager::installedVersion, menyembunyikan apply same/older/missing target dan meng-escape catatan release sebagai teks. Metadata divalidasi saat check; paket diunduh dan hash/struktur ZIP diperiksa sebelum write. Update tetap eksplisit satu komponen; prerelease tetap local/staging.
+
+## Alpha.16 — alur pembaruan untuk pengguna awam
+
+- UpdateManager owns core repo default, stable/testing channel, legacy tag interpretation, channel save and concrete reviewed release. Default source asukayalab/FalconWF and stable channel; old nonempty tag maps to testing only when no channel option exists. Save validates capability/environment, clears obsolete tag/candidate, and verifies persistence. Backup settings exclude fwf_update_channel alongside core connection options.
+- GitHubClient trial discovery scans pages of100 (max10 pages, 1MiB/page); chooses highest semver prerelease alpha/beta/rc among published non-draft releases, independent of API ordering. Full final page at bound or failed/truncated page returns an error instead of claiming complete discovery. Selected tag is fetched and manifest validated; malformed/latest incomplete release fails without silently installing older packages. Stable uses GitHub latest endpoint.
+- Apply re-discovers latest at write time and compares channel, repo, concrete tag and package with review. New release after review requires another check; no auto-install/downgrade. Trial remains local/staging only. UI removes core tag field, preconfigures source in collapsed operator settings, chooses one channel, links backup and names the update target. Project configuration remains an operator-only collapsed section; project transport contract is unchanged.
+
+## Prinsip UX klien — berlaku lintas fitur
+
+- Pengguna klien diasumsikan awam IT. Sebelum implementasi, bedakan pekerjaan pengelola sekali saat setup dari pekerjaan rutin klien; jangan meminta klien mengetahui repo/tag/manifest/credential atau masuk ke server untuk operasi rutin.
+- Sediakan default yang benar, penemuan informasi otomatis, label tindakan yang menyebut target, status sebelum/sesudah, dan petunjuk tindakan berikutnya. Detail pengelola boleh tersedia dalam pengaturan lanjutan; langkah yang menentukan keamanan tetap eksplisit dan memakai bahasa pengguna.
+- Review seluruh perjalanan pengguna dari pemasangan, konfigurasi, pemakaian, kegagalan/retry hingga update berikutnya. Pengujian tidak berhenti pada tombol yang berhasil; versi berikutnya harus dapat ditemukan tanpa mengisi ulang konfigurasi. Bukti yang belum diverifikasi tidak dijadikan janji kepada klien.
+
+## Otomatisasi distribusi core
+
+- Push main pada repo owner asukayalab/FalconWF memicu verify dan WordPress Docker integration dengan izin read-only. Setelah lulus, fresh build dari SHA push menghasilkan tepat tiga artefak untuk job publish. Versi tetap dimiliki release/components.json; catatan versi ada di release/notes/.
+- Job publish saja mempunyai contents write dari GITHUB_TOKEN bawaan. Manifest clean/SHA/map/checksum diperiksa lagi; published version tidak ditimpa. Benturan tag, draft tertinggal dan kegagalan transport/upload berhenti untuk review; tidak ada overwrite/retarget/delete otomatis. Paket lengkap diverifikasi sebelum draft dibuka sebagai prerelease.
+- Pipeline hanya alpha/beta/rc development sampai gate stable diterima. Tidak memakai credential WP, menyambung server klien, mengganti theme atau memasang update otomatis pada situs. Live workflow dan hosted update acceptance dicatat terpisah dari tes adapter lokal.

@@ -5,7 +5,7 @@ use FalconWF\Updates\GitHubClient;
 wp_set_current_user(get_user_by('login','fwf-admin')->ID);
 if(!defined('FWF_GITHUB_TOKEN')){define('FWF_GITHUB_TOKEN','fixture-not-a-real-token');}
 require_once ABSPATH.'wp-admin/includes/file.php';
-$oldRepo=get_option('fwf_repo','');$oldTag=get_option('fwf_update_tag','');$pluginRoot=WP_PLUGIN_DIR.'/falcon-wf';$pluginOriginal=[];
+$oldChannel=get_option('fwf_update_channel',null);$oldRepo=get_option('fwf_repo','');$oldTag=get_option('fwf_update_tag','');$pluginRoot=WP_PLUGIN_DIR.'/falcon-wf';$pluginOriginal=[];
 foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($pluginRoot,FilesystemIterator::SKIP_DOTS)) as $file){$pluginOriginal[substr($file->getPathname(),strlen($pluginRoot)+1)]=file_get_contents($file->getPathname());}
 $activePlugins=get_option('active_plugins');$pluginZip=wp_tempnam('fwf-plugin-update.zip');$zip=new ZipArchive();$zip->open($pluginZip,ZipArchive::CREATE|ZipArchive::OVERWRITE);
 foreach($pluginOriginal as $relative=>$bytes){if($relative==='falcon-wf.php'){$bytes=preg_replace('/^[ *]*Version:.*$/m',' * Version: 0.1.1',$bytes);}$zip->addFromString('falcon-wf/'.$relative,$bytes);}$zip->close();
@@ -15,11 +15,12 @@ $iterator=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,Fil
 foreach($iterator as $file){$relative=substr($file->getPathname(),strlen($root)+1);$bytes=file_get_contents($file->getPathname());if($relative==='style.css'){$bytes=preg_replace('/^Version:.*$/m','Version: 0.1.1',$bytes);}$zip->addFromString('falcon-theme/'.$relative,$bytes);}$zip->close();
 $package=['id'=>'falcon-theme','type'=>'theme','version'=>'0.1.1','artifact'=>'falcon-theme-0.1.1.zip','sha256'=>hash_file('sha256',$zipPath),'min_wp'=>'6.7','min_php'=>'8.3'];
 $manifest=['schema'=>1,'status'=>'stable','dirty'=>false,'source_commit'=>str_repeat('a',40),'packages'=>[$package]];
-$corrupt=false;$redirect=false;$prerelease=false;$duplicate=false;
-$mock=static function($pre,$args,$url) use ($zipPath,$pluginZip,&$manifest,&$corrupt,&$redirect,&$prerelease,&$duplicate) {
+$corrupt=false;$redirect=false;$prerelease=false;$duplicate=false;$listTag='v0.1.2-alpha.1';$paged=false;
+$mock=static function($pre,$args,$url) use ($zipPath,$pluginZip,&$manifest,&$corrupt,&$redirect,&$prerelease,&$duplicate,&$listTag,&$paged) {
  if(isset($args['headers']['Authorization'])){throw new RuntimeException('Public release must not send configured token.');}
  $body='';$code=200;$headers=[];
- if(str_ends_with($url,'/releases/latest') || str_contains($url,'/releases/tags/')){$assets=[['name'=>'release-manifest.json','id'=>1],['name'=>$manifest['packages'][0]['artifact'],'id'=>2]];if($duplicate){$assets[]=$assets[0];}$body=wp_json_encode(['draft'=>false,'prerelease'=>$prerelease,'tag_name'=>$prerelease?'v0.1.2-alpha.1':'v0.1.1','assets'=>$assets,'body'=>'Public release notes <script>unsafe</script>']);}
+ if(str_contains($url,'/releases?')){$items=[['draft'=>false,'prerelease'=>true,'tag_name'=>$listTag],['draft'=>false,'prerelease'=>true,'tag_name'=>'v0.1.1-alpha.9'],['draft'=>true,'prerelease'=>true,'tag_name'=>'v99.0.0-alpha.1'],['draft'=>false,'prerelease'=>false,'tag_name'=>'v99.0.0'],['draft'=>false,'prerelease'=>true,'tag_name'=>'not-a-version']];if($paged){$items=str_ends_with($url,'page=1')?array_fill(0,100,['draft'=>false,'prerelease'=>true,'tag_name'=>'v0.1.1-alpha.9']):$items;}$body=wp_json_encode($items);}
+ elseif(str_ends_with($url,'/releases/latest') || str_contains($url,'/releases/tags/')){$assets=[['name'=>'release-manifest.json','id'=>1],['name'=>$manifest['packages'][0]['artifact'],'id'=>2]];if($duplicate){$assets[]=$assets[0];}$body=wp_json_encode(['draft'=>false,'prerelease'=>$prerelease,'tag_name'=>$prerelease?'v0.1.2-alpha.1':'v0.1.1','assets'=>$assets,'body'=>'Public release notes <script>unsafe</script>']);}
  elseif(str_ends_with($url,'/assets/1')){$body=wp_json_encode($manifest);}
  elseif(str_ends_with($url,'/assets/2')){if($redirect){$code=302;$headers=['location'=>'https://attacker.invalid/package.zip'];}else{$body=$corrupt?'corrupt':file_get_contents($manifest['packages'][0]['id']==='falcon-wf'?$pluginZip:$zipPath);}}
  else{return new WP_Error('fixture_network','External network disabled in update fixture.');}
@@ -28,8 +29,10 @@ $mock=static function($pre,$args,$url) use ($zipPath,$pluginZip,&$manifest,&$cor
 };
 add_filter('pre_http_request',$mock,10,3);
 try {
- update_option('fwf_repo','fixture/falcon-wf',false);update_option('fwf_update_tag','',false);
+ update_option('fwf_repo','fixture/falcon-wf',false);update_option('fwf_update_tag','',false);update_option('fwf_update_channel','stable',false);
  $updater=new UpdateManager();
+ delete_option('fwf_update_channel');update_option('fwf_update_tag','v0.1.0-alpha.15',false);if(UpdateManager::channel()!=='testing'){throw new RuntimeException('Legacy trial migration failed.');}update_option('fwf_update_channel','stable',false);
+ if(!is_wp_error(UpdateManager::saveConnection('fixture/falcon-wf','unknown'))){throw new RuntimeException('Unknown channel accepted.');}
  foreach(['https://github.com/asukayalab/FalconWF/'=>'asukayalab/FalconWF','https://github.com/asukayalab/FalconWF.git'=>'asukayalab/FalconWF',' asukayalab/FalconWF '=>'asukayalab/FalconWF','https://github.com/evil/repo?token=x'=>'','https://github.com@evil.invalid/a/b'=>'','a/../b'=>''] as $input=>$expected){if(GitHubClient::normalizeRepo($input)!==$expected){throw new RuntimeException('Repo normalization failed.');}}
  if(GitHubClient::normalizeRepo([])!==''){throw new RuntimeException('Malformed repo accepted.');}
  if(!is_wp_error(UpdateManager::validateSelection('../release'))){throw new RuntimeException('Unsafe prerelease tag accepted.');}
@@ -41,10 +44,11 @@ try {
  $bad=$manifest;$bad['packages'][0]['min_php']=[];if(!is_wp_error(UpdateManager::validate($bad))){throw new RuntimeException('Malformed runtime accepted.');}
  $bad=$pre;$bad['dirty']=true;if(!is_wp_error(UpdateManager::validate($bad,'v0.1.2-alpha.1'))){throw new RuntimeException('Dirty prerelease accepted.');}
  $bad=$manifest;unset($bad['dirty']);if(!is_wp_error(UpdateManager::validate($bad))){throw new RuntimeException('Missing provenance accepted.');}
- $prerelease=true;$stableManifest=$manifest;$manifest=$pre;update_option('fwf_update_tag','v0.1.2-alpha.1',false);
+ $prerelease=true;$stableManifest=$manifest;$manifest=$pre;update_option('fwf_update_tag','v0.1.2-alpha.1',false);update_option('fwf_update_channel','testing',false);
  if(is_wp_error($updater->check())){throw new RuntimeException('Pinned prerelease discovery failed.');}
- update_option('fwf_update_tag','v0.1.2-alpha.2',false);if(!is_wp_error($updater->check()) || get_option('fwf_release_candidate',false)!==false){throw new RuntimeException('Tag mismatch or stale candidate accepted.');}
- update_option('fwf_update_tag','',false);if(!is_wp_error($updater->check())){throw new RuntimeException('Prerelease metadata accepted from stable endpoint.');}
+ $paged=true;if(is_wp_error($updater->check())){throw new RuntimeException('Paged automatic discovery failed.');}$paged=false;
+ $listTag='v0.1.2-alpha.2';if(!is_wp_error($updater->check()) || get_option('fwf_release_candidate',false)!==false){throw new RuntimeException('Tag mismatch or stale candidate accepted.');}$listTag='v0.1.2-alpha.1';
+ update_option('fwf_update_tag','',false);update_option('fwf_update_channel','stable',false);if(!is_wp_error($updater->check())){throw new RuntimeException('Prerelease metadata accepted from stable endpoint.');}
  $prerelease=false;$manifest=$stableManifest;$duplicate=true;if(!is_wp_error($updater->check())){throw new RuntimeException('Duplicate release asset accepted.');}$duplicate=false;
  if(is_wp_error($updater->check())){throw new RuntimeException('Stable discovery failed.');}
 
@@ -66,11 +70,11 @@ try {
  if(!is_wp_error($updater->update('falcon-theme',true))){throw new RuntimeException('Same-version update accepted.');}
  ob_start();$dashboard->render('updates');$html=ob_get_clean();if(str_contains($html,'name="package_id" value="falcon-theme"') || !str_contains($html,'Tidak ada versi lebih baru')){throw new RuntimeException('Same-version UI offers install.');}
  $zip=new ZipArchive();$zip->open($zipPath);$zip->addFromString('falcon-theme/style.css',preg_replace('/^Version:.*$/m','Version: 0.1.2-alpha.1',$original));$zip->close();
- $manifest=$pre;$manifest['packages'][0]['sha256']=hash_file('sha256',$zipPath);$prerelease=true;update_option('fwf_update_tag','v0.1.2-alpha.1',false);
+ $manifest=$pre;$manifest['packages'][0]['sha256']=hash_file('sha256',$zipPath);$prerelease=true;update_option('fwf_update_tag','v0.1.2-alpha.1',false);update_option('fwf_update_channel','testing',false);
  if(is_wp_error($updater->check())){throw new RuntimeException('Release discovery before theme apply failed.');}
  $result=$updater->update('falcon-theme',true);if(is_wp_error($result)){throw new RuntimeException($result->get_error_message());}
  wp_clean_themes_cache();if(wp_get_theme('falcon-theme')->get('Version')!=='0.1.2-alpha.1' || get_stylesheet()!==$theme){throw new RuntimeException('Prerelease upgrader lost theme/version.');}
- $manifest=$stableManifest;$prerelease=false;update_option('fwf_update_tag','',false);
+ $manifest=$stableManifest;$prerelease=false;update_option('fwf_update_tag','',false);update_option('fwf_update_channel','stable',false);
  if(!is_wp_error($updater->update('falcon-theme',true))){throw new RuntimeException('Stable channel downgraded newer prerelease.');}
  $manifest['packages']=[['id'=>'falcon-wf','type'=>'plugin','version'=>'0.1.1','artifact'=>'falcon-wf-0.1.1.zip','sha256'=>hash_file('sha256',$pluginZip),'min_wp'=>'6.7','min_php'=>'8.3']];
  if(!is_wp_error($updater->update('falcon-wf',true))){throw new RuntimeException('Changed unreviewed component accepted.');}
@@ -84,5 +88,5 @@ try {
  if(!is_wp_error($updater->update('falcon-wf',true))){throw new RuntimeException('Plugin same-version update accepted.');}
  echo 'PASS: pinned staging prerelease/channel/provenance/tag/duplicate-asset checks; actual plugin self-update preserving activation; updater manifest/runtime/backup checks, foreign redirect and corruption refusal, actual WP theme upgrader and no downgrade (mock GitHub only)' . "\n";
 } finally {
- remove_filter('pre_http_request',$mock,10);foreach($pluginOriginal as $relative=>$bytes){file_put_contents($pluginRoot.'/'.$relative,$bytes);}wp_clean_plugins_cache();wp_delete_file($pluginZip);update_option('fwf_update_tag',$oldTag,false);file_put_contents($root.'/style.css',$original);wp_clean_themes_cache();update_option('fwf_repo',$oldRepo,false);delete_option('fwf_release_candidate');wp_delete_file($zipPath);
+ remove_filter('pre_http_request',$mock,10);foreach($pluginOriginal as $relative=>$bytes){file_put_contents($pluginRoot.'/'.$relative,$bytes);}wp_clean_plugins_cache();wp_delete_file($pluginZip);update_option('fwf_update_tag',$oldTag,false);$oldChannel===null?delete_option('fwf_update_channel'):update_option('fwf_update_channel',$oldChannel,false);file_put_contents($root.'/style.css',$original);wp_clean_themes_cache();update_option('fwf_repo',$oldRepo,false);delete_option('fwf_release_candidate');wp_delete_file($zipPath);
 }

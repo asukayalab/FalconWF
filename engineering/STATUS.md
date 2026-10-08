@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build produk/FP: 0.1.0-alpha.15; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build produk/FP: 0.1.0-alpha.16; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -59,3 +59,7 @@ Alpha.13 menambahkan pilihan attachment melalui Media Library pada backup manual
 Alpha.14 mengganti file-journal lama dengan checkpoint privat signed/atomic sebelum write, penanda commit dalam transaksi DB yang sama dan lease koneksi MariaDB. Restore terputus direview/dikonfirmasi manusia: sebelum commit undo file; commit terbukti mempertahankan hasil lalu cleanup. CLI rescue SHORTINIT melewati plugin/theme normal. Pergantian koneksi/hasil DB tak pasti tetap diblokir untuk operator; tidak ada replay SQL/auto theme switch. Core/config/DB/drop-in rusak, power loss dan host matrix belum disertifikasi.
 
 Alpha.15: updater repo publik tanpa token, URL GitHub dinormalisasi, perbandingan versi dan catatan release ditampilkan. Transport private opsional fallback 401/404; credential constant/environment dibaca oleh satu GitHubClient. Metadata/refetch/ZIP hash/runtime/nonce/capability serta larangan downgrade dipertahankan. Pemasangan hosting alpha.15 dan update rilis berikutnya masih menunggu tindakan operator.
+
+Alpha.16: sumber core bawaan dan pilihan Stabil/Uji coba menggantikan tag versi manual. Pengaturan trial lama menjadi penemuan prerelease terbaru; apply memeriksa ulang release konkret dan menolak kandidat lama. Koneksi teknis dilipat untuk pengelola. Repo proyek tetap memiliki kontrak pengelola terpisah. Bukti runtime/hosting dicatat terpisah.
+
+Prioritas 8 Oktober: otomatisasi rilis dan tes publikasinya dikerjakan paralel, kemudian trial update/desain/connector AI di ar.obie.my.id. Rizal ditunda sesuai keputusan pengguna. Rincian deliverable dan batas fondasi desain/MCP ada di NEXT-STEPS.md; kedua arah AI tetap wajib untuk 0.1. Workflow GitHub nyata masih menunggu push dan acceptance remote.

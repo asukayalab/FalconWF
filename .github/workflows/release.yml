@@ -1,0 +1,88 @@
+name: Check and release Falcon WF
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Do not cancel a run halfway through a draft upload, and serialize competing version pushes.
+concurrency:
+  group: falcon-wf-release
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    if: github.repository == 'asukayalab/FalconWF'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked tooling
+        run: npm ci
+      - name: Verify sources, packages and release publication policy
+        run: npm run verify
+      - name: Prepare isolated WordPress
+        run: |
+          npm run local:setup
+          npm run local:up
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --output /dev/null http://localhost:8091/; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = 1
+          npm run local:install
+      - name: Test isolated WordPress integration
+        run: npm run test:integration
+      - name: Build checked source and prepare exact release assets
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          npm run build
+          node scripts/publish-release.mjs prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fwf-checked-release
+          path: dist/release-upload/*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Stop isolated WordPress
+        if: always()
+        run: npm run local:down
+
+  publish:
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: fwf-checked-release
+          path: dist
+      - name: Publish new prerelease without replacing existing releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/publish-release.mjs publish

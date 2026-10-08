@@ -4,24 +4,33 @@ Commit menyimpan kode lokal; push mengirim kode ke GitHub. WordPress memperbarui
 
 ## Konfigurasi situs
 
-1. Falcon WF → Proyek & Koneksi: isi `https://github.com/asukayalab/FalconWF` lalu simpan. Format `asukayalab/FalconWF` juga diterima.
-2. Repo publik tidak memerlukan token, Coolify atau pengaturan server. Tag kosong memilih stable terbaru. Selama trial alpha di local/staging, isi tag tepat, misalnya `v0.1.0-alpha.14`. Prerelease bukan stable; pilihan ini tetap dibatasi environment local/staging.
-3. Falcon WF → Pembaruan → Periksa pembaruan. Lihat versi terpasang, versi tersedia dan catatan perubahan GitHub Release.
-4. Bila ada versi lebih baru, siapkan backup, centang konfirmasi lalu Update komponen. Paket diunduh, metadata/hash/isi ZIP diperiksa, lalu dipasang melalui WordPress. FP dan FT diperbarui terpisah; theme aktif tidak diganti.
+1. Buka Falcon WF → Proyek & Koneksi. Sumber Falcon WF bawaan sudah terisi; pengaturan sumber hanya untuk pengelola.
+2. Pilih **Stabil** untuk website klien, atau **Uji coba** untuk website trial. Uji coba tersedia pada local/staging saja. Klik Simpan pengaturan pembaruan. Nomor versi tidak perlu diketik.
+3. Buka Pembaruan → Periksa pembaruan. FWF mencari versi terbaru, menampilkan versi terpasang/tersedia, waktu pemeriksaan dan catatan perubahan.
+4. Bila tersedia versi lebih baru, siapkan backup, centang konfirmasi lalu Perbarui Falcon Plugin atau Perbarui Falcon Theme. Paket diperiksa sebelum dipasang. FP dan FT diperbarui terpisah; tampilan aktif dipertahankan.
 
-Build alpha.14 dan sebelumnya masih membutuhkan token pada updater. Pasang alpha.15 sekali melalui Plugins → Add New → Upload Plugin → pilih ZIP → Replace current with uploaded. Setelah itu repo publik dapat dipakai tanpa token. Tidak ada pemasangan otomatis tanpa klik manusia.
+Pengaturan tag lama dari alpha.15 atau sebelumnya menjadi jalur Uji coba otomatis saat dibaca oleh alpha.16. Menyimpan pengaturan baru menghapus tag lama. Release baru dapat ditemukan dengan tombol yang sama tanpa mengedit koneksi. Tidak ada pemasangan tanpa tindakan manusia.
 
-Dukungan private tetap opsional: credential Contents read terbatas melalui constant atau environment `FWF_GITHUB_TOKEN`; proyek memakai `FWF_PROJECT_GITHUB_TOKEN`. Request dimulai tanpa credential, kemudian fallback hanya jika API menolak akses (401/404). Credential tidak diteruskan ke host download. Tidak ada token di form, Git, ZIP atau chat.
+Stabil membaca latest stable GitHub. Uji coba memilih versi prerelease tertinggi yang diterbitkan (alpha/beta/rc), mengabaikan draft dan stable. Pengaturan ini tidak otomatis beralih ke stable saat stable diterbitkan; pengelola memilih Stabil setelah trial selesai. Repo publik tidak membutuhkan token/server setup. Repo private tetap opsional melalui credential terbatas server; tidak ada token di form.
 
-## Menyiapkan release
+## Beralih dari alpha.15 ke alur baru
 
-- Gunakan commit bersih. `npm run verify` dan `npm run test:integration` harus lulus; baca batas bukti di engineering/EVIDENCE.md.
-- Versi/status berasal dari release/components.json. Prerelease memakai `development` dan versi alpha/beta/rc; stable memakai `stable` dan versi tiga angka. Manifest dengan dirty true ditolak pada kedua jalur.
-- Jalankan `npm run build` dari checkout commit bersih setelah verifikasi. Periksa source_commit, dirty, versi, hash dan daftar file; jangan edit manifest hasil build.
-- Buat GitHub Release pada commit yang sama. Untuk prerelease gunakan tag `v` + versi dan tandai prerelease; jangan draft. Unggah tiga asset dari dist: release-manifest.json, ZIP falcon-wf, ZIP falcon-theme. Tidak mengunggah source ZIP sebagai paket instalasi, database, uploads, credential, docs atau session-notes.
-- WordPress staging memilih tag tepat lalu menguji check, FP self-update, FT update, activation state dan konten. Metadata GitHub dan hash paket diperiksa lagi saat apply.
+Setelah release alpha.16 dari commit bersih diterbitkan, instalasi alpha.15 memilih tag v0.1.0-alpha.16 satu kali untuk memperbarui Falcon Plugin lewat updater yang sudah ada. Setelah plugin menjadi alpha.16, tag lama dikenali sebagai jalur Uji coba otomatis. Klik Periksa pembaruan lagi untuk memperbarui daftar; rilis berikutnya tidak perlu perubahan tag. Ini bootstrap alur baru, bukan pengaturan rutin klien.
 
-Tidak ada publish GitHub otomatis dari perintah build. Penerbitan release dan pengujian pemasangan hosting tetap tindakan terpisah.
+## Menyiapkan release otomatis
+
+Setelah workflow masuk ke GitHub, pengelola cukup commit/push ke main. Actions menjalankan verify, memasang paket pada WordPress Docker terisolasi, menjalankan integration tests, lalu membangun ulang dari commit bersih. Jika versi belum diterbitkan, Actions membuat GitHub prerelease dengan tiga asset: release-manifest.json, ZIP Falcon Plugin dan ZIP Falcon Theme. Tidak perlu mengunggah ZIP manual atau memasang token GitHub pada server WordPress.
+
+Developer menaikkan versi melalui release/components.json (metadata npm harus tetap cocok) dan menyiapkan catatan di release/notes/VERSI.md. Commit perubahan tanpa kenaikan versi tetap diperiksa, tetapi tidak menimpa release yang sudah terbit. Paket desain klien memakai jalur proyek tersendiri, bukan workflow core ini.
+
+1. Commit/push perubahan main lewat VS Code.
+2. Buka repo GitHub → Actions → Check and release Falcon WF. Tunggu job pemeriksaan dan penerbitan selesai; jika merah, perbaiki penyebab lalu push lagi. Tidak ada release baru dari pemeriksaan gagal.
+3. Bila Actions dinonaktifkan oleh kebijakan akun/repo, pengelola mengaktifkannya sekali di Settings → Actions → General. Workflow menggunakan GITHUB_TOKEN bawaan dengan izin tulis hanya pada job penerbitan; tidak meminta personal token.
+4. Periksa halaman Releases: prerelease dan tiga asset harus tersedia. Baru lakukan trial pembaruan di ar.obie.my.id. Pemasangan pada WordPress tetap dikonfirmasi manusia.
+
+Automation saat ini hanya untuk alpha/beta/rc berstatus development. Stable tidak diterbitkan otomatis sebelum gerbang 0.1 diterima. Upload memakai draft terlebih dahulu; kegagalan upload tidak membuka release parsial kepada updater. Draft yang tertinggal atau benturan tag berhenti untuk review pengelola, tidak menimpa asset diam-diam. Eksekusi workflow remote belum dianggap lulus hanya karena tes lokal lulus.
+
+Fallback manual tetap tersedia: jalankan verify dan integration, build dari commit bersih, buat prerelease pada commit sama lalu unggah tiga asset dari dist. Jangan edit manifest hasil build atau mengunggah DB/uploads/credential/docs/session-notes.
 
 ## Recovery
 

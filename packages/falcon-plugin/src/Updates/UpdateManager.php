@@ -3,9 +3,10 @@ namespace FalconWF\Updates;
 use FalconWF\Audit\Logger;
 use FalconWF\Packages\Lock;
 final class UpdateManager {
-    public static function validateSelection(string $tag): true|\WP_Error {
+    public static function validateSelection(string $tag,bool $automatic=false): true|\WP_Error {
         if ($tag==='') { return true; }
         if (!in_array(wp_get_environment_type(),['local','staging'],true)) { return new \WP_Error('FWF_PERMISSION','Prerelease hanya di environment local atau staging. Kosongkan tag untuk stable.'); }
+        if ($tag==='*' && $automatic) { return true; }
         if (!preg_match('/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D',$tag)) { return new \WP_Error('FWF_VALIDATION','Tag prerelease harus seperti v0.1.0-alpha.3.'); }
         return true;
     }
@@ -25,17 +26,35 @@ final class UpdateManager {
         }
         if(!$packages){return new \WP_Error('FWF_PACKAGE','Tidak ada paket.');}return $packages;
     }
+    public static function repo(): string { return (string)(get_option('fwf_repo','')?:'asukayalab/FalconWF'); }
+    public static function channel(): string {
+        // A previous trial tag becomes the automatic trial channel; no version entry is required.
+        return (string)get_option('fwf_update_channel',get_option('fwf_update_tag','')===''?'stable':'testing');
+    }
+    private static function selection(): string|\WP_Error {
+        $channel=self::channel();
+        if (!in_array($channel,['stable','testing'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih jalur Stabil atau Uji coba.'); }
+        $tag=$channel==='testing'?'*':'';$valid=self::validateSelection($tag,true);return is_wp_error($valid)?$valid:$tag;
+    }
+    public static function saveConnection(mixed $repo,mixed $channel): true|\WP_Error {
+        if(!current_user_can('fwf_manage_connections')){return new \WP_Error('FWF_PERMISSION','Tidak diizinkan mengubah koneksi.');}
+        $repo=GitHubClient::normalizeRepo($repo);
+        if($repo==='' || !is_string($channel) || !in_array($channel,['stable','testing'],true)){return new \WP_Error('FWF_VALIDATION','Periksa alamat GitHub dan pilihan jalur pembaruan.');}
+        $valid=self::validateSelection($channel==='testing'?'*':'',true);if(is_wp_error($valid)){return $valid;}
+        update_option('fwf_repo',$repo,false);update_option('fwf_update_channel',$channel,false);delete_option('fwf_update_tag');delete_option('fwf_release_candidate');
+        if(get_option('fwf_repo')!==$repo || get_option('fwf_update_channel')!==$channel){return new \WP_Error('FWF_DB','Pengaturan belum berhasil disimpan. Coba lagi.');}return true;
+    }
     public static function installedVersion(string $id): string {
         if ($id==='falcon-wf') { require_once ABSPATH.'wp-admin/includes/plugin.php';return (string)(get_plugin_data(WP_PLUGIN_DIR.'/falcon-wf/falcon-wf.php',false,false)['Version']??''); }
         return $id==='falcon-theme'?(string)wp_get_theme('falcon-theme')->get('Version'):'';
     }
     public function check(): array|\WP_Error {
         if(!current_user_can('fwf_manage_updates')){return new \WP_Error('FWF_PERMISSION','Tidak diizinkan cek update.');}
-        $repo=(string)get_option('fwf_repo','');$tag=(string)get_option('fwf_update_tag','');delete_option('fwf_release_candidate');$release=(new GitHubClient($repo))->release($tag);
+        $repo=self::repo();$selection=self::selection();delete_option('fwf_release_candidate');if(is_wp_error($selection)){return $selection;}$release=(new GitHubClient($repo))->release($selection);
         if(is_wp_error($release)){return $release;}
-        $packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
+        $tag=$selection==='*'?$release['tag']:'';$packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
         foreach($packages as $p){if(!isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Artifact release hilang.');}}
-        $release['repo']=$repo;$release['selection_tag']=$tag;$release['checked_at']=time(); update_option('fwf_release_candidate',$release,false);if(get_option('fwf_release_candidate')!==$release){delete_option('fwf_release_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
+        $release['repo']=$repo;$release['selection_tag']=$selection;$release['checked_at']=time(); update_option('fwf_release_candidate',$release,false);if(get_option('fwf_release_candidate')!==$release){delete_option('fwf_release_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
         Logger::write('release_check','succeeded');return $packages;
     }
     public function update(string $id, bool $backupConfirmed): true|\WP_Error {
@@ -48,21 +67,21 @@ final class UpdateManager {
         $owner=Lock::acquire('updates');if(is_wp_error($owner)){return $owner;}$tmp=null;
         try {
             // Refetch trusted metadata at apply time; do not trust stale client/option input.
-            $tag=(string)get_option('fwf_update_tag','');$release=(new GitHubClient((string)get_option('fwf_repo','')))->release($tag);if(is_wp_error($release)){return $release;}
-            $packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
+            $selection=self::selection();if(is_wp_error($selection)){return $selection;}$release=(new GitHubClient(self::repo()))->release($selection);if(is_wp_error($release)){return $release;}
+            $tag=$selection==='*'?$release['tag']:'';$packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
             $p=$packages[$id]??null;if(!$p || !isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Target package tidak tersedia.');}
             $candidate=get_option('fwf_release_candidate',[]);
             $reviewed=self::validate(is_array($candidate['manifest']??null)?$candidate['manifest']:[],$tag);
-            if(($candidate['repo']??null)!==get_option('fwf_repo','') || ($candidate['selection_tag']??null)!==$tag || is_wp_error($reviewed) || ($reviewed[$id]??null)!==$p || ($candidate['tag']??null)!==$release['tag']){return new \WP_Error('FWF_COMPATIBILITY','Release berubah atau belum diperiksa. Periksa ulang dan review versi sebelum update.');}
+            if(($candidate['repo']??null)!==self::repo() || ($candidate['selection_tag']??null)!==$selection || is_wp_error($reviewed) || ($reviewed[$id]??null)!==$p || ($candidate['tag']??null)!==$release['tag']){return new \WP_Error('FWF_COMPATIBILITY','Release berubah atau belum diperiksa. Periksa ulang dan review versi sebelum update.');}
             $current=self::installedVersion($id);
             if(!$current || version_compare($current,$p['version'],'>=')){return new \WP_Error('FWF_COMPATIBILITY','Target belum terpasang atau tidak lebih baru. Tidak downgrade.');}
-            $tmp=(new GitHubClient((string)get_option('fwf_repo','')))->asset($release['assets'][$p['artifact']],true);if(is_wp_error($tmp)){return $tmp;}
+            $tmp=(new GitHubClient((string)self::repo()))->asset($release['assets'][$p['artifact']],true);if(is_wp_error($tmp)){return $tmp;}
             $verified=self::verifyZip($tmp,$p);if(is_wp_error($verified)){return $verified;}
             $audit=Logger::write('package_update','started');if(is_wp_error($audit)){return $audit;}
             $key=$id==='falcon-wf'?'update_plugins':'update_themes';$previous=get_site_transient($key);
             $transient=is_object($previous)?clone $previous:new \stdClass();$transient->response=$transient->response??[];
             $target=$id==='falcon-wf'?'falcon-wf/falcon-wf.php':'falcon-theme';
-            $item=['new_version'=>$p['version'],'package'=>$tmp,'url'=>'https://github.com/'.get_option('fwf_repo',''),'requires'=>$p['min_wp'],'requires_php'=>$p['min_php']];
+            $item=['new_version'=>$p['version'],'package'=>$tmp,'url'=>'https://github.com/'.self::repo(),'requires'=>$p['min_wp'],'requires_php'=>$p['min_php']];
             if($id==='falcon-wf'){$item['slug']='falcon-wf';$item['plugin']=$target;$item=(object)$item;}
             $transient->response[$target]=$item;set_site_transient($key,$transient);
             try {

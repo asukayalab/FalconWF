@@ -83,27 +83,35 @@ final class Dashboard {
                 break;
             case 'ai': $this->ai(); break;
             case 'connections':
-                $this->start('save_repo',$page); $this->text('repo','Alamat repo FWF (URL GitHub atau owner/name)',(string)get_option('fwf_repo',''));
-                $this->text('release_tag','Tag prerelease (local/staging saja; kosong = stable)',(string)get_option('fwf_update_tag',''),'text',false);
-                echo '<p>Commit/push belum membuat update: GitHub Release harus berisi release-manifest.json dan ZIP komponen dari build commit bersih. Prerelease dipilih lewat tag tertentu, bukan otomatis.</p>';
-                echo '<p>Repo publik tidak memerlukan token atau pengaturan server. Setelah menyimpan, buka Pembaruan untuk memeriksa versi. Koneksi desain klien terpisah di bawah.</p>'; $this->end('Simpan repo release'); $this->projectConnection(); break;
+                echo '<h2>Pembaruan Falcon WF</h2><p>Atur sekali. Falcon WF akan mencari versi terbaru sesuai pilihan di bawah; Anda tidak perlu mengetahui nomor versinya.</p>';
+                $this->start('save_repo',$page);
+                $channel=\FalconWF\Updates\UpdateManager::channel();
+                echo '<p><label for="fwf-update-channel">Versi yang ingin diterima</label><br><select id="fwf-update-channel" name="update_channel"><option value="stable" '.selected($channel,'stable',false).'>Stabil — disarankan untuk website klien</option>';
+                if (in_array(wp_get_environment_type(),['local','staging'],true)) { echo '<option value="testing" '.selected($channel,'testing',false).'>Uji coba — untuk website trial</option>'; }
+                echo '</select></p><p>Stabil menerima versi resmi. Uji coba menerima versi pengembangan terbaru dan hanya tersedia pada situs trial.</p><details><summary>Pengaturan sumber pembaruan (untuk pengelola)</summary>';
+                $this->text('repo','Alamat GitHub sumber pembaruan',\FalconWF\Updates\UpdateManager::repo());
+                echo '<p>Sumber bawaan Falcon WF sudah terisi. Repo publik tidak membutuhkan token.</p></details>';
+                $this->end('Simpan pengaturan pembaruan');
+                echo '<p><a class="button button-primary" href="'.esc_url(admin_url('admin.php?page=falcon-wf-updates')).'">Buka Pembaruan</a></p><details><summary>Koneksi desain website (untuk pengelola)</summary>'; $this->projectConnection();echo '</details>'; break;
             case 'updates':
-                $this->start('check_updates',$page); $this->end(get_option('fwf_update_tag','')===''?'Periksa pembaruan':'Periksa pembaruan prerelease');
-                echo '<p>Environment: '.esc_html(wp_get_environment_type()).' · Jalur: '.esc_html(get_option('fwf_update_tag','')?:'stable terbaru').'.</p>';
+                $this->start('check_updates',$page); $this->end('Periksa pembaruan');
+                echo '<p>Versi yang diterima: <strong>'.esc_html(\FalconWF\Updates\UpdateManager::channel()==='testing'?'Uji coba terbaru':'Stabil terbaru').'</strong>. Nomor versi dicari otomatis.</p>';
                 $candidate=get_option('fwf_release_candidate',[]);
                 foreach (['falcon-wf'=>'Falcon Plugin','falcon-theme'=>'Falcon Theme'] as $id=>$label) {
                     $installed=\FalconWF\Updates\UpdateManager::installedVersion($id);
                     echo '<p>'.esc_html($label.' terpasang: '.($installed?:'belum terpasang')).'</p>';
                 }
                 if (!empty($candidate['notes'])) { echo '<h2>Catatan perubahan</h2><pre style="white-space:pre-wrap">'.esc_html($candidate['notes']).'</pre>'; }
+                if (!empty($candidate['checked_at'])) { echo '<p>Terakhir diperiksa: '.esc_html(wp_date('d M Y, H:i',(int)$candidate['checked_at'])).'.</p>'; }
                 foreach ($candidate['manifest']['packages']??[] as $package) {
                     $current=\FalconWF\Updates\UpdateManager::installedVersion($package['id']);
                     $newer=$current!=='' && version_compare($package['version'],$current,'>');
-                    echo '<p>'.esc_html($package['id'].' · Terpasang: '.($current?:'belum terpasang').' · Tersedia: '.$package['version'].' · '.($newer?'Pembaruan tersedia':($current===''?'Pasang melalui installer terlebih dahulu':'Tidak ada versi lebih baru'))).'</p>';
+                    $label=$package['id']==='falcon-wf'?'Falcon Plugin':'Falcon Theme';
+                    echo '<p>'.esc_html($label.' · Terpasang: '.($current?:'belum terpasang').' · Tersedia: '.$package['version'].' · '.($newer?'Pembaruan tersedia':($current===''?'Pasang melalui installer terlebih dahulu':'Tidak ada versi lebih baru'))).'</p>';
                     if (!$newer) { continue; }
-                    $this->start('apply_update',$page); echo '<input type="hidden" name="package_id" value="'.esc_attr($package['id']).'"><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia dan paket telah diuji pada staging; saya memilih update komponen ini.</label>'; $this->end('Update komponen');
+                    $this->start('apply_update',$page); echo '<input type="hidden" name="package_id" value="'.esc_attr($package['id']).'"><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia dan paket telah diuji pada staging; saya memilih update komponen ini.</label>'; $this->end('Perbarui '.$label);
                 }
-                echo '<p>Periksa → review versi dan catatan perubahan → update satu komponen. Paket diperiksa ulang dan hash ZIP diverifikasi sebelum pemasangan. Theme aktif tetap dipertahankan. Pemulihan database memakai backup terpisah.</p>'; $this->projectUpdates(); break;
+                echo '<p>Periksa → review versi dan catatan perubahan → update satu komponen. Falcon WF memeriksa paket sebelum memasangnya. Tampilan aktif tetap dipertahankan. <a href="'.esc_url(admin_url('admin.php?page=falcon-wf-backup')).'">Buka Backup &amp; Restore</a> untuk menyiapkan backup.</p>'; $this->projectUpdates(); break;
             case 'maintenance':
                 $this->start('save_maintenance',$page);
                 echo '<p><label><input type="checkbox" name="enabled" value="yes" '.checked(get_option('fwf_maintenance',false),true,false).'> Aktifkan maintenance (HTTP 503). Admin berwenang tetap bisa preview.</label></p><p>Terpisah dari theme default Dalam Pembangunan.</p>';
@@ -348,10 +356,7 @@ final class Dashboard {
                 case 'check_project': $result=(new ProjectManager())->check(); break;
                 case 'apply_project': $result=(new ProjectManager())->apply(($p['backup']??'')==='yes'); break;
                 case 'save_repo':
-                    $repo=\FalconWF\Updates\GitHubClient::normalizeRepo($p['repo']??null);
-                    $tag=is_string($p['release_tag']??'')?trim($p['release_tag']??''):null;
-                    $selection=$tag===null?new \WP_Error('FWF_VALIDATION','Tag harus berupa teks.'):\FalconWF\Updates\UpdateManager::validateSelection($tag);
-                    if (!\FalconWF\Updates\GitHubClient::validRepo($repo)) { $result=new \WP_Error('FWF_VALIDATION','Gunakan URL https://github.com/owner/repo atau owner/repo tanpa token.'); } elseif(is_wp_error($selection)) { $result=$selection; } else { update_option('fwf_update_tag',$tag,false); update_option('fwf_repo',$repo,false); delete_option('fwf_release_candidate'); } break;
+                    $result=\FalconWF\Updates\UpdateManager::saveConnection($p['repo']??null,$p['update_channel']??null); break;
                 case 'check_updates': $result=(new \FalconWF\Updates\UpdateManager())->check(); break;
                 case 'apply_update': $result=(new \FalconWF\Updates\UpdateManager())->update(sanitize_key($p['package_id']??''),($p['backup']??'')==='yes'); break;
                 case 'install_theme': $result=(new ThemeInstaller(dirname($this->file)))->install(); break;
