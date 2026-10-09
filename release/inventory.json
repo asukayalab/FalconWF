@@ -348,5 +348,12 @@
     "path": "rescue.php",
     "loaded_by": "Human operator PHP CLI --root --inspect / --apply --review --confirm; no HTTP execution",
     "proof": "tests/backup-recovery.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/AI/OAuth.php",
+    "package": "plugin",
+    "path": "src/AI/OAuth.php",
+    "loaded_by": "InboundAuth register \u2192 discovery/admin consent/token \u2192 shared Policy/AgentTools; Backup exclusion and daily cleanup",
+    "proof": "tests/oauth.test.mjs; tests/oauth-fixture.php; tests/admin.test.mjs; tests/build.test.mjs"
   }
 ]

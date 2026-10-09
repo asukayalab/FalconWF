@@ -43,8 +43,11 @@ try {
  $estimates=$must(B::estimates());
  $ok($estimates['media']['bytes']>=100*1024*1024 && $estimates['database']['bytes']>40*1024*1024,'per-component estimates include 100MiB media and 40MiB database');
  $ok(B::selectedSize($estimates,['database','settings'])===$estimates['database']['bytes'],'database selection avoids duplicate settings size');
+ update_option('fwf_oauth_access_fixture',['opaque'=>'OAUTH_BEFORE_SNAPSHOT'],false);
  $id=$must(B::create(array_keys(B::components())));$backups[]=$id;$review=$must(B::inspect($id));
  $sql=json_decode((function() use ($id,$must) {$z=new ZipArchive();$z->open($must(B::path($id)));$v=$z->getFromName('database.json');$z->close();return $v;})(),true);
+ $z=new ZipArchive();$z->open($must(B::path($id)));$oauthRows=$z->getFromName('rows/'.$wpdb->options.'.jsonl');$z->close();$ok(is_string($oauthRows) && !str_contains($oauthRows,'OAUTH_BEFORE_SNAPSHOT') && !str_contains($oauthRows,'fwf_oauth_access_fixture'),'backup excludes OAuth authentication options');
+ update_option('fwf_oauth_access_fixture',['opaque'=>'OAUTH_AFTER_SNAPSHOT'],false);
  $ok(!isset($sql[$wpdb->users]) && !isset($sql[$wpdb->usermeta]),'database backup excludes authentication/account tables');
  update_option('fwf_request_fixture',['result'=>'keep-current']);update_option('fwf_ai_budget',['day'=>gmdate('Y-m-d'),'count'=>11]);
  $post=wp_insert_post(['post_title'=>'backup fixture added after snapshot','post_status'=>'draft']);
@@ -62,6 +65,7 @@ try {
  $ok(memory_get_peak_usage(true)<128*1024*1024,'large backup/restore fits 128MiB PHP memory');
  $ok(get_post($post)===null && file_get_contents($folder.'/report.pdf')==='ORIGINAL REPORT','actual transactional database and report-file recovery');
  $ok(get_option('fwf_request_fixture')===['result'=>'keep-current'] && get_option('fwf_ai_budget')['count']===11,'restore cannot rewind AI idempotency records or spending budget');
+ $ok(get_option('fwf_oauth_access_fixture')===['opaque'=>'OAUTH_AFTER_SNAPSHOT'],'restore cannot rewind OAuth credentials');
  $ok(get_option('active_plugins')===$active && get_option('stylesheet')===$theme,'restore preserves active plugin/theme selection');
  $deny=static function($caps) {$caps['fwf_manage_system']=false;return $caps;};add_filter('user_has_cap',$deny);
  $ok(is_wp_error(B::create(['settings'])) && is_wp_error(B::inspect($id)),'unauthorized backup and review denied');remove_filter('user_has_cap',$deny);

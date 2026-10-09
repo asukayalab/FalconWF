@@ -63,7 +63,7 @@ if (action === 'setup') {
       for (const file of ['content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
-      for (const test of ['tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
+      for (const test of ['tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/oauth.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
         const r=spawnSync(process.execPath,[test],{cwd:root,stdio:'inherit'});
         if(r.status!==0) throw new Error(`Integration check failed: ${test} (exit ${r.status ?? 1}).`);
       }

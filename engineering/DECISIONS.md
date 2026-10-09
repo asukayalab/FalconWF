@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini produk/FP `0.1.0-alpha.16`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini build lokal produk/FP `0.1.0-alpha.17`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -180,3 +180,9 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Push main pada repo owner asukayalab/FalconWF memicu verify dan WordPress Docker integration dengan izin read-only. Setelah lulus, fresh build dari SHA push menghasilkan tepat tiga artefak untuk job publish. Versi tetap dimiliki release/components.json; catatan versi ada di release/notes/.
 - Job publish saja mempunyai contents write dari GITHUB_TOKEN bawaan. Manifest clean/SHA/map/checksum diperiksa lagi; published version tidak ditimpa. Benturan tag, draft tertinggal dan kegagalan transport/upload berhenti untuk review; tidak ada overwrite/retarget/delete otomatis. Paket lengkap diverifikasi sebelum draft dibuka sebagai prerelease.
 - Pipeline hanya alpha/beta/rc development sampai gate stable diterima. Tidak memakai credential WP, menyambung server klien, mengganti theme atau memasang update otomatis pada situs. Live workflow dan hosted update acceptance dicatat terpisah dari tes adapter lokal.
+
+## Alpha.17 lokal — OAuth dan proyek personal
+
+- OAuth.php memiliki AS internal public client statis, PKCE S256, exact callback/resource, consent manusia dan credential hashed. InboundAuth menghubungkan Bearer ke Policy/AgentTools existing; tidak ada engine konten kedua. Owner capability, actor role/password/grant revision/expiry diperiksa ulang; scope tetap explicit. Credential token tidak masuk backup/rewind.
+- Registrasi client memakai capability/nonce dashboard; tanpa client secret, DCR atau CIMD. Refresh/revoke berbagi lease keluarga sesi dan lease credential, code/refresh sekali pakai. Tidak mengklaim interoperabilitas ChatGPT sampai uji akun/HTTPS nyata. Hosting/published core tetap alpha.16.
+- Builder proyek existing menerima source/output terpisah dan provenance Git source. Portfolio Ar. Obie berada lokal di ignored artifacts, sesuai instruksi pengguna tanpa push GitHub Asukayalab. Tidak mengaktifkan theme hosting.

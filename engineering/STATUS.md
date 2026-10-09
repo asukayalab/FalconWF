@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build produk/FP: 0.1.0-alpha.16; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.17; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -38,7 +38,7 @@ Alpha.5 menambahkan koneksi repo proyek terpisah, check/review/install/update sa
 - Backup/restore target dan rehearsal; lisensi/notice sebelum distribusi.
 - V8/CV/aset untuk pilot Rizal, terpisah dari core AI.
 
-Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote asukayalab/FalconWF (publik sejak 8 Oktober 2026) dan runtime lokal sudah memakai mount clone. Prerelease GitHub otomatis alpha.16 sudah terbit dan lolos probe baca-saja dari updater lokal. Pengguna melaporkan `ar.obie.my.id` sudah diperbarui manual ke alpha.16; versi/runtime hosting belum diverifikasi independen dan jalur self-update hosting belum diuji. Penerimaan klien dan provider request berbayar juga belum diuji. Pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.
+Pada sesi implementasi awal belum ada remote GitHub. Checkout utama kini memakai remote asukayalab/FalconWF (publik sejak 8 Oktober 2026) dan runtime lokal sudah memakai mount clone. Prerelease GitHub otomatis alpha.16 sudah terbit dan lolos probe baca-saja dari updater lokal. Pengguna melaporkan `ar.obie.my.id` sudah diperbarui manual ke alpha.16; pemeriksaan browser admin/frontend 9 Oktober 2026 mengonfirmasi FPalpha.16, FTalpha.6 aktif, WP7.1.3/PHP8.3.35; jalur self-update hosting belum diuji. Penerimaan klien dan provider request berbayar juga belum diuji. Pemasangan situs publik oleh user tidak dihitung sebagai kelulusan seluruh gate.
 
 Alpha.6 menyediakan SEO/GEO metadata dasar opt-in melalui Identitas & Kontak. FT owns renderer/config; native WordPress title/canonical/robots/sitemap dipertahankan. Public singular/latest-posts home saja; archive/search/pagination, preview/private/password dan coming-soon tidak mendapat metadata tambahan. Lihat SEO.md. Live search/rich-result/AI citation acceptance tidak diklaim. Panduan pengguna lengkap menjadi deliverable menjelang rilis 0.1, sesuai permintaan user. Desain Global tetap dibekukan; referensi Oxygen Builder diingatkan saat area itu dibahas lagi.
 
@@ -62,6 +62,8 @@ Alpha.15: updater repo publik tanpa token, URL GitHub dinormalisasi, perbandinga
 
 Alpha.16: sumber core bawaan dan pilihan Stabil/Uji coba menggantikan tag versi manual. Pengaturan trial lama menjadi penemuan prerelease terbaru; apply memeriksa ulang release konkret dan menolak kandidat lama. Koneksi teknis dilipat untuk pengelola. Repo proyek tetap memiliki kontrak pengelola terpisah. Bukti runtime/hosting dicatat terpisah.
 
-Prioritas setelah rilis otomatis: cek runtime alpha.16 di `ar.obie.my.id`, lalu trial self-update pada versi berikutnya, desain website dan connector AI. Rizal ditunda sesuai keputusan pengguna. Rincian deliverable dan batas fondasi desain/MCP ada di NEXT-STEPS.md; kedua arah AI tetap wajib untuk 0.1. Dua run GitHub awal gagal dalam tes CI fresh; run ketiga lulus dan menerbitkan prerelease alpha.16. Acceptance self-update di hosting masih terbuka.
+Prioritas setelah rilis otomatis: runtime alpha.16 di `ar.obie.my.id` sudah diperiksa baca-saja, lalu trial self-update pada versi berikutnya, desain website dan connector AI. Rizal ditunda sesuai keputusan pengguna. Rincian deliverable dan batas fondasi desain/MCP ada di NEXT-STEPS.md; kedua arah AI tetap wajib untuk 0.1. Dua run GitHub awal gagal dalam tes CI fresh; run ketiga lulus dan menerbitkan prerelease alpha.16. Acceptance self-update di hosting masih terbuka.
 
 Run Actions pertama alpha.16 gagal pada guard FT sebelum bundled installer; urutan harness diperbaiki. Run kedua melewati guard/installer tetapi gagal karena volume backup baru di CI belum UID33/mode0700. Compose lokal kini menyiapkan volume privat sebelum WordPress/CLI. Full suite dari WordPress kosong di Docker terpisah lulus. Commit 4e51321 membuat run ketiga 37798640116 lulus checks dan publish; prerelease v0.1.0-alpha.16 berisi ZIP plugin, ZIP theme dan manifest. Probe anonim updater lokal memverifikasi kedua paket tanpa memasangnya. Lihat EVIDENCE.md.
+
+Alpha.17 lokal: adapter OAuth public client/PKCE, discovery, consent administrator, token hashed/rotating/revoke menuju MCP dan scope existing; tool metadata dan pengecualian backup credential operasional. Registrasi callback manual, belum DCR/CIMD. Hosting tetap alpha.16; belum publish/push atau acceptance ChatGPT. Starter portfolio Ar. Obie alpha.1 disiapkan lokal, tanpa distribusi GitHub. Lihat CHATGPT-CONNECTOR.md dan EVIDENCE.md.

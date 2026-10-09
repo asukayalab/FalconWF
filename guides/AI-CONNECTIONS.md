@@ -1,4 +1,4 @@
-# Menghubungkan AI ke Falcon WF Alpha.2
+# Menghubungkan AI ke Falcon WF — build lokal Alpha.17
 
 Panduan ini mengikuti kemampuan build lokal saat ini. Ada dua jalur: WordPress meminta proposal teks ke OpenAI API, atau agent MCP mengakses draft WordPress. Koneksi provider live dan penerimaan oleh aplikasi ChatGPT/Codex belum diuji; pengujian MCP memakai client HTTP otomatis, pengujian provider memakai mock. Langganan ChatGPT belum bisa dipakai untuk login langsung ke Falcon WF.
 
@@ -57,7 +57,7 @@ Gunakan client MCP yang mendukung request HTTP JSON-RPC stateless dan **HTTP Bas
 | Password | Application Password khusus tadi |
 | Protocol version | `2025-03-26` |
 
-Untuk server nonlokal, HTTPS diwajibkan. `localhost` hanya menunjuk mesin tempat client berjalan: client cloud/HP tidak bisa menjangkau laptop lewat URL lokal ini. Cloud memerlukan endpoint HTTPS yang dapat dijangkau serta client/auth yang kompatibel. Jangan menganggap memasukkan URL ini ke ChatGPT atau Codex langsung sudah cukup: OAuth, koneksi langsung memakai langganan ChatGPT, dan adapter STDIO Codex belum tersedia dalam build ini.
+Untuk server nonlokal, HTTPS diwajibkan. `localhost` hanya menunjuk mesin tempat client berjalan: client cloud/HP tidak bisa menjangkau laptop lewat URL lokal ini. Cloud memerlukan endpoint HTTPS yang dapat dijangkau serta client/auth yang kompatibel. Jangan menganggap memasukkan URL ini ke ChatGPT atau Codex langsung sudah cukup: Fondasi OAuth tersedia pada alpha.17 lokal; pemasangan HTTPS dan acceptance ChatGPT belum dilakukan. Adapter STDIO Codex belum tersedia.
 
 Uji tahap pertama `initialize`, berikutnya `tools/list`, lalu `tools/call` untuk `describe_schema`. Contoh payload discovery (kirim dengan auth client, jangan menaruh secret dalam payload):
 
@@ -94,4 +94,15 @@ Belum tersedia: pencarian/list konten lewat tool, penetapan term taksonomi lewat
 
 ## Status penerimaan
 
-Tes lokal mencakup autentikasi HTTP, discovery, scope per objek/field/type, membuat/mengedit draft, revisi, idempotensi, revokasi, serta penolakan akses REST/XML-RPC. Tes provider mencakup konteks terpilih, proposal, persetujuan manusia, konflik dan disconnect dengan mock. Koneksi provider sungguhan dan client AI pilihan pengguna tetap membutuhkan uji penerimaan tersendiri dengan credential pengguna. Alpha.2 belum dinyatakan siap produksi.
+Tes lokal mencakup autentikasi HTTP, discovery, scope per objek/field/type, membuat/mengedit draft, revisi, idempotensi, revokasi, serta penolakan akses REST/XML-RPC. Tes provider mencakup konteks terpilih, proposal, persetujuan manusia, konflik dan disconnect dengan mock. Koneksi provider sungguhan dan client AI pilihan pengguna tetap membutuhkan uji penerimaan tersendiri dengan credential pengguna. Alpha.17 belum dinyatakan siap produksi.
+
+## C. Fondasi OAuth untuk ChatGPT (alpha.17 lokal)
+
+1. Sesudah build direview, pengelola memasang alpha.17 secara eksplisit pada WordPress HTTPS. Hosting ar.obie.my.id saat ini masih alpha.16.
+2. Buat actor dan grant terbatas sesuai bagian B. Application Password tetap menjadi identitas grant; jangan mengirim passwordnya ke ChatGPT untuk OAuth.
+3. Ambil callback persis dari setup connector yang tersedia pada akun ChatGPT. Di Falcon WF → AI → OAuth, daftarkan nama dan callback itu. Gunakan Client ID yang tampil, auth public client `none`, tanpa client secret. Registrasi dinamis belum tersedia.
+4. Gunakan endpoint MCP aktual yang tampil. Saat otorisasi, login sebagai administrator, periksa client/callback dan scope actor lalu setujui hanya scope yang diperlukan.
+5. Uji discovery/read/create/edit draft dengan akun ChatGPT nyata; terbitkan hanya melalui editor manusia. Tes lokal tidak membuktikan koneksi akun ini.
+6. Cabut scope, Application Password atau hapus client OAuth untuk menghentikan akses. Menyimpan ulang scope membatalkan token lama dan memerlukan otorisasi ulang.
+
+Contract teknis dan sumber resmi: [CHATGPT-CONNECTOR.md](../engineering/CHATGPT-CONNECTOR.md). Koneksi outbound API pada bagian A tetap terpisah.

@@ -17,7 +17,10 @@ final class Routes {
             }
             return $o;
         }]);
-        register_rest_route('falcon-wf/v1','/mcp',['methods'=>'POST','permission_callback'=>static fn()=>InboundAuth::allowed(), 'callback'=>[$this,'mcp']]);
+        register_rest_route('falcon-wf/v1','/mcp',[
+            ['methods'=>'POST','permission_callback'=>static fn()=>InboundAuth::allowed(), 'callback'=>[$this,'mcp']],
+            ['methods'=>'GET','permission_callback'=>'__return_true','callback'=>static fn()=>new \WP_REST_Response(['error'=>'Streaming GET tidak disediakan.'],405,['Allow'=>'POST'])],
+        ]);
     }
     public function mcp(\WP_REST_Request $request): \WP_REST_Response {
         $origin=$request->get_header('origin');
@@ -51,11 +54,17 @@ final class Routes {
     }
     private function definitions(): array {
         $fields=['type'=>'object','properties'=>\FalconWF\Content\Schema::jsonProperties(), 'additionalProperties'=>false];
-        return [
+        $tools=[
             ['name'=>'describe_schema','description'=>'Describe permitted fields for one scoped content type. Read only.','inputSchema'=>['type'=>'object','properties'=>['type'=>['type'=>'string','enum'=>$this->content->types()]],'required'=>['type'],'additionalProperties'=>false]],
             ['name'=>'read_content','description'=>'Read explicitly scoped published content or opt-in draft fields.','inputSchema'=>['type'=>'object','properties'=>['id'=>['type'=>'integer','minimum'=>1],'fields'=>['type'=>'array','items'=>['type'=>'string','enum'=>\FalconWF\Content\Schema::keys()]]],'required'=>['id'],'additionalProperties'=>false]],
             ['name'=>'create_draft','description'=>'Create draft only; never publish. Retry with same idempotency key.','inputSchema'=>['type'=>'object','properties'=>['type'=>['type'=>'string','enum'=>$this->content->types()],'fields'=>$fields,'idempotency_key'=>['type'=>'string']],'required'=>['type','fields','idempotency_key'],'additionalProperties'=>false]],
             ['name'=>'edit_draft','description'=>'Edit explicitly scoped draft with current revision; never publish.','inputSchema'=>['type'=>'object','properties'=>['id'=>['type'=>'integer'],'expected_revision'=>['type'=>'string'],'fields'=>$fields,'idempotency_key'=>['type'=>'string']],'required'=>['id','expected_revision','fields','idempotency_key'],'additionalProperties'=>false]],
         ];
+        foreach ($tools as &$tool) {
+            $tool['securitySchemes']=[['type'=>'oauth2','scopes'=>['falcon:content']]];
+            $tool['_meta']=['securitySchemes'=>$tool['securitySchemes']];
+            $tool['annotations']=['readOnlyHint'=>in_array($tool['name'],['describe_schema','read_content'],true),'destructiveHint'=>false,'openWorldHint'=>false,'idempotentHint'=>true];
+        }
+        return $tools;
     }
 }

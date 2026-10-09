@@ -6,7 +6,7 @@ Keputusan pengguna 8 Oktober 2026: otomatisasi rilis dan tesnya dikerjakan paral
 
 - Push main memicu verifikasi, integration WordPress terisolasi dan build dari commit bersih. Versi baru menjadi GitHub prerelease dengan manifest, FP ZIP, FT ZIP dan catatan perubahan. Versi yang sudah terbit tidak ditimpa.
 - Uji kegagalan, benturan tag, provenance dan hash sebelum publikasi. Eksekusi GitHub Actions nyata harus dibuktikan sesudah workflow di-push; tes adapter lokal bukan bukti penerbitan GitHub.
-- Pengguna melaporkan `ar.obie.my.id` sudah diperbarui manual ke alpha.16; verifikasi versi/runtime hosting belum dilakukan independen. Cek admin, konten dan theme aktif. Pada prerelease berikutnya, trial jalur Uji coba: backup, periksa, update FP, cek ulang, dan update FT bila ada versi baru. Jalur itu harus menemukan versi berikutnya tanpa mengetik tag; pemasangan manual alpha.16 belum membuktikannya.
+- Pengguna melaporkan `ar.obie.my.id` sudah diperbarui manual ke alpha.16; pemeriksaan baca-saja 9 Oktober 2026 mengonfirmasi FPalpha.16, FTalpha.6 aktif, admin dan frontend coming-soon merender. Site Health Good dengan rekomendasi cron native WP; belum host recovery/AI acceptance. Pada prerelease berikutnya, trial jalur Uji coba: backup, periksa, update FP, cek ulang, dan update FT bila ada versi baru. Jalur itu harus menemukan versi berikutnya tanpa mengetik tag; pemasangan manual alpha.16 belum membuktikannya.
 
 ## 2. Kebutuhan desain website
 
@@ -33,3 +33,9 @@ Endpoint MCP, scope, revisions dan empat tool konten sudah tersedia. Belum ada p
 ## 4. Penutupan 0.1
 
 Sesudah tiga jalur di atas berjalan: recheck instalasi baru/update, pemulihan yang didukung, panduan pengguna sederhana dan gate dalam STATUS.md. Jangan menamai alpha sebagai stable atau selesai hanya karena build/test lokal lulus. Rizal dilanjutkan saat pengguna memintanya; fitur cloud backup kemudian.
+
+## Target trial 9 Oktober 2026
+
+- Portfolio pribadi Ar. Obie, starter sederhana. Source/paket desain disiapkan lokal di ignored local/artifacts/ar-obie; pengguna meminta tidak push ke GitHub Asukayalab. Repo/distribusi remote desain belum ditentukan.
+- Client inbound pertama: ChatGPT custom connector/plugin. Auth existing Basic belum kompatibel dengan pilihan auth yang didokumentasikan ChatGPT; Fondasi OAuth tersedia pada build lokal alpha.17; pemasangan HTTPS dan uji akun ChatGPT masih diperlukan. Contract di CHATGPT-CONNECTOR.md.
+- Outbound hosting menampilkan credential belum dikonfigurasi; request provider nyata menunggu credential/model server-side dan policy yang direview. Jangan kirim credential lewat chat.

@@ -5,7 +5,7 @@ use FalconWF\Content\Schema;
 final class AgentTools {
     public function __construct(private Repository $content) {}
     public function call(string $tool, array $args): array|\WP_Error {
-        if (!InboundAuth::allowed()) { return new \WP_Error('FWF_AUTH','Application password agent dan HTTPS diperlukan.'); }
+        if (!InboundAuth::allowed()) { return new \WP_Error('FWF_AUTH','Identitas agent yang disetujui dan HTTPS diperlukan.'); }
         if (array_is_list($args) && $args) { return new \WP_Error('FWF_VALIDATION','Arguments harus object.'); }
         foreach (['id','expected_revision','type','idempotency_key'] as $key) {
             if (isset($args[$key]) && ($key==='id' ? !is_int($args[$key]) || $args[$key]<1 : !is_string($args[$key]))) { return new \WP_Error('FWF_VALIDATION','Tipe argument tidak valid.'); }

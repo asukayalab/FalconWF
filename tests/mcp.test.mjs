@@ -8,7 +8,7 @@ function cli(file,...args){
 }
 const fixture=JSON.parse(cli('create-agent.php'));
 const url=fixture.endpoint;
-const headers={'Content-Type':'application/json','Accept':'application/json, text/event-stream','Authorization':`Basic ${Buffer.from(`${fixture.login}:${fixture.password}`).toString('base64')}`};
+const headers={'Connection':'close','Content-Type':'application/json','Accept':'application/json, text/event-stream','Authorization':`Basic ${Buffer.from(`${fixture.login}:${fixture.password}`).toString('base64')}`};
 let checks=0;
 function ok(condition,label){assert(condition,label);checks++;console.log('PASS:',label);}
 async function rpc(method,params={},extra={}){
@@ -51,7 +51,7 @@ try {
  r=await rpc('tools/call',{name:'edit_draft',arguments:{id:project.id,expected_revision:project.revision,fields:{project_year:2027},idempotency_key:'mcp-valid-custom'}});
  ok(!r.body.result.isError && result(r).revision!==project.revision,'custom metadata HTTP edit changes revision');
  r=await rpc('tools/call',{name:'publish',arguments:{id:draft.id}});ok(r.body.result.isError,'prompt/tool escalation refused');
- const xml=await fetch('http://localhost:8091/xmlrpc.php',{method:'POST',headers:{'Content-Type':'text/xml'},body:`<methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>${fixture.login}</string></value></param><param><value><string>${fixture.password}</string></value></param></params></methodCall>`});
+ const xml=await fetch('http://localhost:8091/xmlrpc.php',{method:'POST',headers:{'Connection':'close','Content-Type':'text/xml'},body:`<methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value><string>${fixture.login}</string></value></param><param><value><string>${fixture.password}</string></value></param></params></methodCall>`});
  ok((await xml.text()).includes('faultCode'),'XML-RPC cannot bypass MCP scope with agent application password');
  const native=await fetch(fixture.native,{method:'POST',headers,body:JSON.stringify({title:'Bypass',status:'draft'})});
  ok(native.status===403,'native WordPress REST cannot bypass agent policy');

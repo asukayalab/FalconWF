@@ -10,18 +10,22 @@ final class Policy {
             'objects'=>array_values(array_unique(array_map('absint',$scope['objects']??[]))),
             'types'=>array_values(array_intersect($scope['types']??[],\FalconWF\Bootstrap::instance()->content->types())),
             'expires'=>time()+30*DAY_IN_SECONDS];
-        update_option('fwf_agent_' . $actor,['uuid'=>$uuid,'scope'=>$scope],false);
-        return true;
+        $record=['uuid'=>$uuid,'scope'=>$scope,'revision'=>wp_generate_uuid4()];
+        update_option('fwf_agent_' . $actor,$record,false);
+        return get_option('fwf_agent_'.$actor,false)===$record?true:new \WP_Error('FWF_STORAGE','Scope gagal disimpan.');
     }
     public static function check(string $action, string $type, int $object, array $fields): true|\WP_Error {
         $grant=get_option('fwf_agent_' . get_current_user_id(),[]);
         $scope=$grant['scope']??[];
-        if (!InboundAuth::uuid() || !hash_equals($grant['uuid']??'',InboundAuth::uuid()) || ($scope['expires']??0)<time() ||
+        if (!InboundAuth::allowed() || !InboundAuth::uuid() || !hash_equals($grant['uuid']??'',InboundAuth::uuid()) || ($scope['expires']??0)<time() ||
             !in_array($action,$scope['actions']??[],true) || !in_array($type,$scope['types']??[],true) ||
             array_diff($fields,$scope['fields']??[]) || ($object>0 && !in_array($object,$scope['objects']??[],true))) {
             return new \WP_Error('FWF_PERMISSION','Identity/action/object/field scope ditolak.');
         }
         return true;
     }
-    public static function revoke(int $actor): void { delete_option('fwf_agent_' . $actor); }
+    public static function revoke(int $actor): true|\WP_Error {
+        delete_option('fwf_agent_' . $actor);
+        return get_option('fwf_agent_'.$actor,false)===false?true:new \WP_Error('FWF_STORAGE','Scope gagal dicabut.');
+    }
 }

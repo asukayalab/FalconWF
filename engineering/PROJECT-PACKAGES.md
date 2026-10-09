@@ -43,3 +43,9 @@ Contoh generik dipasang/dipilih sementara dalam fixture Docker, diuji lalu dipul
 - Install target belum ada dengan overwrite false; update hanya versi lebih tinggi lewat transient target tunggal yang dipulihkan. Backup/staging confirmation, direct writable filesystem/temp/disk, audit pre-write serta shared updates lock core/proyek wajib. Hasil file/version/parent diperiksa. Tidak switch theme/Reading/content.
 - Disconnect hanya menghapus koneksi/kandidat. Live Preview/aktivasi dilakukan lewat Appearance → Themes. Human direct edit child files akan terganti saat update; desain global DB tetap per theme. Recovery kode WordPress/backup, bukan rollback DB otomatis.
 - Belum live GitHub release, host acceptance, plugin proyek, multi-project packages, arbitrary layout editor atau contract Rizal. Contoh repo generik tidak mengklaim repo klien tertentu.
+
+## Builder source proyek terpisah
+
+`npm run build:project` tetap membangun Falcon Reference. Untuk source proyek terpisah, gunakan `npm run build:project -- --source <folder-source> --output <folder-artefak>`. `project.json` menjadi pemilik project/package ID dan daftar runtime; source desain klien tidak perlu masuk repo core.
+
+Output harus berada di luar source dan tidak overlap staging build. Runtime PHP/CSS terdaftar menolak symlink, termasuk direktori asset. Commit/dirty dihitung dari repo source proyek, bukan otomatis dari repo core; source yang belum dilacak Git menghasilkan source_commit null/dirty true dan hanya untuk ZIP preview/manual lokal. Rilis remote memerlukan source proyek dilacak dalam repo sendiri dengan provenance bersih. Builder tidak membuat repo, push, publish atau aktivasi theme.

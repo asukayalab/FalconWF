@@ -1,13 +1,13 @@
 {
   "product": "Falcon WF 0.1",
-  "version": "0.1.0-alpha.16",
+  "version": "0.1.0-alpha.17",
   "min_wp": "6.7",
   "min_php": "8.3",
   "plugin": "falcon-wf",
   "theme": "falcon-theme",
   "release_status": "development",
   "versions": {
-    "falcon-wf": "0.1.0-alpha.16",
+    "falcon-wf": "0.1.0-alpha.17",
     "falcon-theme": "0.1.0-alpha.6"
   }
 }
