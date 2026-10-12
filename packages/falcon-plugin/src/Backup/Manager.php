@@ -5,10 +5,7 @@ use FalconWF\Packages\Lock;
 final class Manager {
     public static function components(): array { return ['database'=>'Database konten situs (akun tetap)','media'=>'Media / uploads','plugins'=>'Berkas plugin','themes'=>'Berkas theme','settings'=>'Pengaturan FWF dan Reading']; }
     public static function directory(): string|\WP_Error {
-        if (!defined('FWF_BACKUP_DIR') || !is_string(FWF_BACKUP_DIR)) { return new \WP_Error('FWF_BACKUP_STORAGE','Konfigurasikan FWF_BACKUP_DIR di luar folder publik WordPress.'); }
-        $path=realpath(FWF_BACKUP_DIR);$web=realpath(ABSPATH);
-        if (!$path || !$web || is_link(FWF_BACKUP_DIR) || $path===$web || str_starts_with($path,$web.DIRECTORY_SEPARATOR) || !is_writable($path) || (fileperms($path)&0077)!==0) { return new \WP_Error('FWF_BACKUP_STORAGE','Folder backup harus private (0700), writable, dan di luar WordPress.'); }
-        return $path;
+        return Storage::directory();
     }
     private static function fail(string $message): never { throw new \RuntimeException($message); }
     private static function allowed(): void { if (!current_user_can('fwf_manage_system') || is_multisite()) { self::fail('Tidak diizinkan atau multisite tidak didukung.'); } }

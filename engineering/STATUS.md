@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build lokal produk/FP: 0.1.0-alpha.17; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.18; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -67,3 +67,5 @@ Prioritas setelah rilis otomatis: runtime alpha.16 di `ar.obie.my.id` sudah dipe
 Run Actions pertama alpha.16 gagal pada guard FT sebelum bundled installer; urutan harness diperbaiki. Run kedua melewati guard/installer tetapi gagal karena volume backup baru di CI belum UID33/mode0700. Compose lokal kini menyiapkan volume privat sebelum WordPress/CLI. Full suite dari WordPress kosong di Docker terpisah lulus. Commit 4e51321 membuat run ketiga 37798640116 lulus checks dan publish; prerelease v0.1.0-alpha.16 berisi ZIP plugin, ZIP theme dan manifest. Probe anonim updater lokal memverifikasi kedua paket tanpa memasangnya. Lihat EVIDENCE.md.
 
 Alpha.17 lokal: adapter OAuth public client/PKCE, discovery, consent administrator, token hashed/rotating/revoke menuju MCP dan scope existing; tool metadata dan pengecualian backup credential operasional. Registrasi callback manual, belum DCR/CIMD. Hosting tetap alpha.16; belum publish/push atau acceptance ChatGPT. Starter portfolio Ar. Obie alpha.1 disiapkan lokal, tanpa distribusi GitHub. Lihat CHATGPT-CONNECTOR.md dan EVIDENCE.md.
+
+Alpha.18: penyimpanan Backup & Restore dapat disiapkan melalui capability/nonce dashboard, otomatis di luar document root atau folder privat existing dari pengelola. Storage menjadi owner tunggal validasi dan dipakai Manager/SHORTINIT rescue; constant lama tetap prioritas dan arsip tidak dipindahkan. Pemeriksaan hosting 12 Oktober 2026 mengonfirmasi alpha.17 dan halaman backup berhenti pada FWF_BACKUP_DIR belum dikonfigurasi. Hosting belum menerima perbaikan alpha.18. Bukti uji final ada di EVIDENCE.md.

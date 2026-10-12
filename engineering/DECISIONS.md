@@ -5,7 +5,7 @@
 | Area | Pilihan dan alasan |
 |---|---|
 | Identitas | Plugin `falcon-wf`, theme `falcon-theme`, PHP namespace `FalconWF`, REST `falcon-wf/v1`, text domain sesuai komponen. |
-| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini build lokal produk/FP `0.1.0-alpha.17`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
+| Versi | Product target Falcon WF 0.1; build awal `0.1.0-alpha.1`, kini build lokal produk/FP `0.1.0-alpha.18`, FT `0.1.0-alpha.6`. `release/components.json` menjadi input metadata build. Stable belum diterbitkan. |
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
@@ -186,3 +186,9 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - OAuth.php memiliki AS internal public client statis, PKCE S256, exact callback/resource, consent manusia dan credential hashed. InboundAuth menghubungkan Bearer ke Policy/AgentTools existing; tidak ada engine konten kedua. Owner capability, actor role/password/grant revision/expiry diperiksa ulang; scope tetap explicit. Credential token tidak masuk backup/rewind.
 - Registrasi client memakai capability/nonce dashboard; tanpa client secret, DCR atau CIMD. Refresh/revoke berbagi lease keluarga sesi dan lease credential, code/refresh sekali pakai. Tidak mengklaim interoperabilitas ChatGPT sampai uji akun/HTTPS nyata. Hosting/published core tetap alpha.16.
 - Builder proyek existing menerima source/output terpisah dan provenance Git source. Portfolio Ar. Obie berada lokal di ignored artifacts, sesuai instruksi pengguna tanpa push GitHub Asukayalab. Tidak mengaktifkan theme hosting.
+
+## Alpha.18 — setup storage backup pada hosting
+
+- Storage owns pilihan/validasi folder privat; Manager, locks, scheduler dan SHORTINIT rescue memakai directory yang sama. Dashboard human action capability/nonce menyiapkan storage sekali. GET tidak membuat folder. Constant existing tetap authoritative; lokasi yang bekerja tidak dapat diganti melalui setup, tanpa migrasi arsip terselubung.
+- Default mencoba sibling document root server dengan nama terikat installation path dan marker kepemilikan. Parent yang tidak writable atau batas public root yang tak diketahui dilaporkan; tidak fallback ke uploads/folder publik. Opsi pengelola hanya menerima folder existing absolut, private0700/writable, tanpa symlink termasuk ancestor dan di luar semua public roots.
+- fwf_backup_directory non-autoload menyimpan path dan batas public roots agar PHP CLI/SHORTINIT tetap menolak folder publik saat DOCUMENT_ROOT tidak tersedia. Namespace backup existing dikecualikan dari rewind. SHORTINIT tidak memakai APIs media/theme yang belum siap. Arsip/settings/accounts/theme selection tetap dipertahankan. Restore local/staging/same-version dan seluruh gate lama tetap berlaku.

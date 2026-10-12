@@ -355,5 +355,12 @@
     "path": "src/AI/OAuth.php",
     "loaded_by": "InboundAuth register \u2192 discovery/admin consent/token \u2192 shared Policy/AgentTools; Backup exclusion and daily cleanup",
     "proof": "tests/oauth.test.mjs; tests/oauth-fixture.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Backup/Storage.php",
+    "package": "plugin",
+    "path": "src/Backup/Storage.php",
+    "loaded_by": "Manager directory / Dashboard human setup / SHORTINIT rescue",
+    "proof": "tests/backup-storage.test.mjs; tests/backup-storage.php; tests/backup-storage-http.test.mjs; tests/admin.test.mjs; tests/backup-recovery.test.mjs"
   }
 ]
