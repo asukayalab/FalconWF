@@ -192,3 +192,11 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Storage owns pilihan/validasi folder privat; Manager, locks, scheduler dan SHORTINIT rescue memakai directory yang sama. Dashboard human action capability/nonce menyiapkan storage sekali. GET tidak membuat folder. Constant existing tetap authoritative; lokasi yang bekerja tidak dapat diganti melalui setup, tanpa migrasi arsip terselubung.
 - Default mencoba sibling document root server dengan nama terikat installation path dan marker kepemilikan. Parent yang tidak writable atau batas public root yang tak diketahui dilaporkan; tidak fallback ke uploads/folder publik. Opsi pengelola hanya menerima folder existing absolut, private0700/writable, tanpa symlink termasuk ancestor dan di luar semua public roots.
 - fwf_backup_directory non-autoload menyimpan path dan batas public roots agar PHP CLI/SHORTINIT tetap menolak folder publik saat DOCUMENT_ROOT tidak tersedia. Namespace backup existing dikecualikan dari rewind. SHORTINIT tidak memakai APIs media/theme yang belum siap. Arsip/settings/accounts/theme selection tetap dipertahankan. Restore local/staging/same-version dan seluruh gate lama tetap berlaku.
+
+## Alpha.19 — Halaman & Desain
+
+- Dashboard menyediakan entry pages; PageDesign owns rendering/check/save native assignment. Tidak membuat mapping option kedua atau custom content writer. Editor Page tetap native WordPress.
+- Satu Apply per Page supaya tidak mengklaim atomic multi-page write. Halaman terbit dapat berubah tampilan langsung; konfirmasi manusia wajib. Post content/slug/status/modified, menu/Reading/theme aktif tidak diubah.
+- Template harus terdaftar untuk Page pada theme aktif dan file ditemukan; default explicit didukung. Template hilang ditampilkan disabled, tidak diganti otomatis. front-page.php tetap mengikuti native hierarchy.
+- Human capability system + edit_post, nonce, revisi content/status/template/theme/catalog, edit-lock dan lease per Page. Compare previous native metadata saat update; tidak menjanjikan transaksi universal terhadap editor/plugin/theme writer pihak ketiga atau external filesystem changes.
+- UI memakai pagination20; draft preview mengikuti WordPress. Registry peran, auto-create Page, batch apply, field import dan MCP discovery ditunda.

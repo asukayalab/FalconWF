@@ -12,6 +12,7 @@ final class Dashboard {
     private const PAGES = [
         'overview'=>['Ringkasan','fwf_manage_system'], 'content'=>['Content Builder','fwf_manage_modules'],
         'backup'=>['Backup & Restore','fwf_manage_system'],
+        'pages'=>['Halaman & Desain','fwf_manage_system'],
         'design'=>['Desain Global','fwf_manage_system'],
         'identity'=>['Identitas & Kontak','fwf_manage_system'], 'modules'=>['Modul','fwf_manage_modules'],
         'connections'=>['Proyek & Koneksi','fwf_manage_connections'], 'ai'=>['AI','fwf_manage_ai'],
@@ -71,6 +72,7 @@ final class Dashboard {
                 $this->text('name','Nama identitas proyek',$identity['name']);
                 echo '<p><label for="fwf-contact">Kontak publik</label><br><textarea id="fwf-contact" name="contact" rows="4" maxlength="500">'.esc_textarea($identity['contact']).'</textarea></p>';
                 $this->end('Simpan identitas'); $this->seo(); break;
+            case 'pages': PageDesign::render(); break;
             case 'design': $this->design(); break;
             case 'backup': $this->backup(); break;
             case 'modules':
@@ -331,7 +333,7 @@ final class Dashboard {
     }
     public function action(): void {
         $op=sanitize_key(wp_unslash($_POST['operation']??''));
-        $caps=['setup_backup_storage'=>'fwf_manage_system','review_recovery'=>'fwf_manage_system','apply_recovery'=>'fwf_manage_system','save_backup_schedule'=>'fwf_manage_system','save_backup_retention'=>'fwf_manage_system','protect_backup'=>'fwf_manage_system','unprotect_backup'=>'fwf_manage_system','cancel_delete_backup'=>'fwf_manage_system','save_backup_note'=>'fwf_manage_system','review_delete_backup'=>'fwf_manage_system','delete_backup'=>'fwf_manage_system','resume_backup'=>'fwf_manage_system','cancel_backup'=>'fwf_manage_system','create_backup'=>'fwf_manage_system','review_backup'=>'fwf_manage_system','restore_backup'=>'fwf_manage_system','import_backup'=>'fwf_manage_system','download_backup'=>'fwf_manage_system','save_seo'=>'fwf_manage_system','save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_project'=>'fwf_manage_connections','disconnect_project'=>'fwf_manage_connections','check_project'=>'fwf_manage_updates','apply_project'=>'fwf_manage_updates','save_design'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','add_oauth_client'=>'fwf_manage_ai','remove_oauth_client'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
+        $caps=['save_page_design'=>'fwf_manage_system','setup_backup_storage'=>'fwf_manage_system','review_recovery'=>'fwf_manage_system','apply_recovery'=>'fwf_manage_system','save_backup_schedule'=>'fwf_manage_system','save_backup_retention'=>'fwf_manage_system','protect_backup'=>'fwf_manage_system','unprotect_backup'=>'fwf_manage_system','cancel_delete_backup'=>'fwf_manage_system','save_backup_note'=>'fwf_manage_system','review_delete_backup'=>'fwf_manage_system','delete_backup'=>'fwf_manage_system','resume_backup'=>'fwf_manage_system','cancel_backup'=>'fwf_manage_system','create_backup'=>'fwf_manage_system','review_backup'=>'fwf_manage_system','restore_backup'=>'fwf_manage_system','import_backup'=>'fwf_manage_system','download_backup'=>'fwf_manage_system','save_seo'=>'fwf_manage_system','save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_project'=>'fwf_manage_connections','disconnect_project'=>'fwf_manage_connections','check_project'=>'fwf_manage_updates','apply_project'=>'fwf_manage_updates','save_design'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','add_oauth_client'=>'fwf_manage_ai','remove_oauth_client'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
         if (!isset($caps[$op]) || !current_user_can($caps[$op])) { Logger::write('admin_denied','FWF_PERMISSION'); wp_die('Tidak diizinkan.', '', ['response'=>403]); }
         check_admin_referer('fwf_'.$op);
         $p=wp_unslash($_POST); $result=true; $proposal='';
@@ -381,6 +383,7 @@ final class Dashboard {
                 case 'install_theme': $result=(new ThemeInstaller(dirname($this->file)))->install(); break;
                 case 'activate_theme': $result=($p['confirm']??'')==='yes'?(new ThemeInstaller(dirname($this->file)))->activate():new \WP_Error('FWF_PERMISSION','Konfirmasi pergantian theme diperlukan.'); break;
                 case 'skip_setup': update_option('fwf_setup','skipped',false); break;
+                case 'save_page_design': $result=PageDesign::save($p['page_id']??null,$p['template']??null,$p['revision']??null,$p['confirm']??null); break;
                 case 'save_design': $result=Settings::saveDesign(($p['reset_design']??'')==='yes'?[]:($p['design']??null),$p['theme']??null,$p['revision']??null); break;
                 case 'save_seo': $result=Settings::saveSeo($p['seo_mode']??null,$p['revision']??null); break;
                 case 'save_identity': $result=Settings::saveIdentity(['name'=>$p['name']??'','contact'=>$p['contact']??'']); break;
@@ -404,6 +407,7 @@ final class Dashboard {
         set_transient('fwf_notice_'.get_current_user_id(),['ok'=>!is_wp_error($result),'text'=>is_wp_error($result)?$result->get_error_message():'Tindakan selesai.'],120);
         $screen=sanitize_key($p['screen']??'overview'); if (!isset(self::PAGES[$screen])) { $screen='overview'; }
         $url=admin_url('admin.php?page='.($screen==='overview'?'falcon-wf':'falcon-wf-'.$screen));
+        if ($op==='save_page_design' && is_string($p['list_page']??null)) { $url=add_query_arg('paged',max(1,absint($p['list_page'])),$url); }
         if ($proposal) { $url=add_query_arg('proposal',$proposal,$url); }
         wp_safe_redirect($url); exit;
     }

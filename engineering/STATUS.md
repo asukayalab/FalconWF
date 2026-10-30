@@ -1,8 +1,8 @@
 # Status implementasi Falcon WF
 
-Build lokal produk/FP: 0.1.0-alpha.18; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.19; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
-Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan sebelas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
+Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan dua belas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
 `release/inventory.json` adalah peta source → path paket → consumer → bukti. Nama file dari dokumen FWF-13 adalah usulan; implementasi menggabungkan tanggung jawab kecil tanpa membuat file/class kosong. Koneksi dinamis dibuktikan lewat integration/HTTP tests, bukan static check saja.
 
@@ -69,3 +69,5 @@ Run Actions pertama alpha.16 gagal pada guard FT sebelum bundled installer; urut
 Alpha.17 lokal: adapter OAuth public client/PKCE, discovery, consent administrator, token hashed/rotating/revoke menuju MCP dan scope existing; tool metadata dan pengecualian backup credential operasional. Registrasi callback manual, belum DCR/CIMD. Hosting tetap alpha.16; belum publish/push atau acceptance ChatGPT. Starter portfolio Ar. Obie alpha.1 disiapkan lokal, tanpa distribusi GitHub. Lihat CHATGPT-CONNECTOR.md dan EVIDENCE.md.
 
 Alpha.18: penyimpanan Backup & Restore dapat disiapkan melalui capability/nonce dashboard, otomatis di luar document root atau folder privat existing dari pengelola. Storage menjadi owner tunggal validasi dan dipakai Manager/SHORTINIT rescue; constant lama tetap prioritas dan arsip tidak dipindahkan. Pemeriksaan hosting 12 Oktober 2026 mengonfirmasi alpha.17 dan halaman backup berhenti pada FWF_BACKUP_DIR belum dikonfigurasi. Hosting belum menerima perbaikan alpha.18. Bukti uji final ada di EVIDENCE.md.
+
+Alpha.19 lokal: Halaman & Desain menampilkan Page (20 per halaman) dan named template theme aktif, Apply per Page, Edit isi dan Lihat/Preview. Assignment memakai native _wp_page_template, sehingga editor WordPress dan dashboard membaca data yang sama. Capability/nonce/confirmation/revision, lease per Page dan native edit-lock menjaga boundary; tidak menulis judul/body/URL/status/homepage/theme. Bukan batch mapping, registry peran, blueprint importer atau MCP tool baru. Pengujian final dicatat di EVIDENCE.md. Belum publish/deploy.

@@ -320,3 +320,14 @@ Scope and limits: validation refusal now precedes native writes for supported fo
 - Full npm run test:integration final exit0, log ignored local/artifacts/backup-alpha18-integration.log: syntax55PHP, installed runtime58files match build, storage21/HTTP7, admin123, seluruh backup/restore/recovery/media/scheduler/retention/jobs/HTTP/MCP/OAuth/update/content/frontend/project lulus. Settings restored/verified dan backup worker restarted. WordPress.org transport warnings tetap keterbatasan lokal; fixture provider/GitHub dan CI/hosting tetap bukti terpisah.
 
 - Cleanup read-only final: FPalpha.18/FTalpha.6, falcon-theme tetap aktif; satu arsip contoh terlindungi dan satu job contoh lama tetap ada. Cloned tables, snapshot guards, fixture dirs/uploads/users, recovery journals, storage/setup/update locks seluruhnya0/false. Storage option fixture dipulihkan ke absent; constant Docker lama tetap bekerja. ZIP lokal FPalpha.18 SHA256 a2da964daaeb723e9993c55d9e09daaf49c2df3704b296e1d570d4389b92dbec; provenance dirty=true, bukan release remote bersih.
+
+## Halaman & Desain alpha.19 — 30 Oktober 2026, lokal
+
+- npm run verify: exit0, 53 mapped paths, 57/57 tests. PHP syntax56; installed FP/FT runtime59 hashes match build.
+- tests/page-design.php:19checks, actual named template/native assignment/resolution, unchanged content/URL/status/homepage/theme, native editor roundtrip, revision/edit-lock/capability/malformed/non-Page denial, missing template/default and usable pagination links.
+- tests/page-design-http.test.mjs:9checks, actual cookie/nonce/admin action/frontend render, stale/native-editor changes and foreign template denial. Connection:close follows admin harness to avoid local Apache keep-alive socket reuse failure.
+- Full npm run test:integration exit0. Existing backup/restore/recovery/media/schedule/retention/job/project updater/MCP23/OAuth59/admin128/frontend10/project44 suites pass. Site settings restored and verified; worker restarted. Local WordPress.org connection warnings remain environment-specific; no live provider/client/hosting acceptance claimed.
+- Logs ignored local/artifacts/pages-design-alpha19-verify.log and pages-design-alpha19-integration.log. Test assertion initially counted virtual WP_Post page_template as content change; corrected comparator excludes only assignment property. Empty pagination cast/numeric placeholder fixed before final build.
+- No commit/push/publish/deploy. Core alpha.19 and handbook0.1-draft.2 are local review artifacts.
+
+Cleanup final baca-saja: owned HTTP Pages0, fixture users0, per-page locks0, template fixture files0.

@@ -39,3 +39,7 @@ Sesudah tiga jalur di atas berjalan: recheck instalasi baru/update, pemulihan ya
 - Portfolio pribadi Ar. Obie, starter sederhana. Source/paket desain disiapkan lokal di ignored local/artifacts/ar-obie; pengguna meminta tidak push ke GitHub Asukayalab. Repo/distribusi remote desain belum ditentukan.
 - Client inbound pertama: ChatGPT custom connector/plugin. Auth existing Basic belum kompatibel dengan pilihan auth yang didokumentasikan ChatGPT; Fondasi OAuth tersedia pada build lokal alpha.17; pemasangan HTTPS dan uji akun ChatGPT masih diperlukan. Contract di CHATGPT-CONNECTOR.md.
 - Outbound hosting menampilkan credential belum dikonfigurasi; request provider nyata menunggu credential/model server-side dan policy yang direview. Jangan kirim credential lewat chat.
+
+## Kelanjutan 30 Oktober 2026
+
+Halaman & Desain tersedia lokal pada alpha.19: pointing per Page melalui assignment native, tanpa batch/role registry/blueprint importer. Berikutnya distribusi definisi custom field proyek (kontrak dan review/migrasi lebih dahulu), discovery konteks MCP dan uji client/provider nyata. Review backup/acceptance hosting tetap terbuka. Handbook lokal diperbarui; repo handbook dan desain tetap terpisah dari core.

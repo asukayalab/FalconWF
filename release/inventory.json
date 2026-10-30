@@ -362,5 +362,12 @@
     "path": "src/Backup/Storage.php",
     "loaded_by": "Manager directory / Dashboard human setup / SHORTINIT rescue",
     "proof": "tests/backup-storage.test.mjs; tests/backup-storage.php; tests/backup-storage-http.test.mjs; tests/admin.test.mjs; tests/backup-recovery.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Admin/PageDesign.php",
+    "package": "plugin",
+    "path": "src/Admin/PageDesign.php",
+    "loaded_by": "Dashboard pages render/action",
+    "proof": "tests/page-design.php; tests/admin.test.mjs; tests/build.test.mjs"
   }
 ]
