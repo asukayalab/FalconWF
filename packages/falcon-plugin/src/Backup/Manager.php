@@ -231,12 +231,15 @@ final class Manager {
         try {
             self::allowed();$dir=self::directory();if (is_wp_error($dir)) { return $dir; }$jobs=[];
             foreach (glob($dir.'/job-*')?:[] as $path) {
-                $state=self::job(substr(basename($path),4),false);if ($state['version']!=='@@PLUGIN_VERSION@@' && !in_array($state['phase'],['done','cancelled'],true)) { $state['phase']='failed';$state['error']='Versi kode berubah; batalkan tugas lama dan buat backup baru.'; }$jobs[$state['id']]=array_intersect_key($state,array_flip(['id','phase','components','created','updated','cursor','total','error']));
+                $state=self::job(substr(basename($path),4),false);if ($state['version']!=='@@PLUGIN_VERSION@@' && !in_array($state['phase'],['done','cancelled'],true)) { $state['phase']='failed';$state['error']='Versi kode berubah; batalkan tugas lama dan buat backup baru.'; }$jobs[$state['id']]=array_intersect_key($state,array_flip(['id','phase','components','created','updated','cursor','total','error','destination']));
             }
             uasort($jobs,static fn($a,$b)=>$b['created']<=>$a['created']);return $jobs;
         } catch (\Throwable $e) { return new \WP_Error('FWF_BACKUP',$e->getMessage()); }
     }
-    public static function queue(mixed $components,bool $background=true,mixed $note='',mixed $media=null): string|\WP_Error {
+    public static function queue(mixed $components,bool $background=true,mixed $note='',mixed $media=null,mixed $destination='server'): string|\WP_Error {
+        if(!current_user_can('fwf_manage_system') || !in_array($destination,['server','download'],true)){return new \WP_Error('FWF_BACKUP','Tujuan backup atau izin tidak valid.');}
+        $storage=Storage::provision();if(is_wp_error($storage)){return $storage;}
+        if($destination==='server' && Storage::temporary()){return new \WP_Error('FWF_BACKUP','Penyimpanan server tetap belum siap. Pilih Download ke komputer; pengelola dapat menyiapkan arsip server.');}
         $lock=Lock::acquire('backup');if (is_wp_error($lock)) { return $lock; }$path=null;
         try {
             self::allowed();$note=self::validNote($note);$dir=self::directory();if (is_wp_error($dir)) { return $dir; }
@@ -246,7 +249,7 @@ final class Manager {
             $media=MediaSelection::ids($media);if ($media!==null && (!in_array('media',$components,true) || in_array('database',$components,true))) { self::fail('Media terpilih memerlukan komponen media tanpa database seluruh situs.'); }
             $estimate=self::estimates($media);if (is_wp_error($estimate)) { return $estimate; }self::space($dir,self::selectedSize($estimate,$components)*3);
             $id=wp_generate_uuid4();$path=$dir.'/job-'.$id;if (!mkdir($path,0700)) { self::fail('Folder tugas gagal.'); }
-            $state=['id'=>$id,'version'=>'@@PLUGIN_VERSION@@','site'=>self::site(),'owner'=>get_current_user_id(),'background'=>$background,'phase'=>'queued','created'=>time(),'updated'=>time(),'components'=>array_values($components),'media_selection'=>$media,'cursor'=>0,'total'=>0,'error'=>''];self::checkpoint($state);
+            $state=['id'=>$id,'version'=>'@@PLUGIN_VERSION@@','site'=>self::site(),'owner'=>get_current_user_id(),'destination'=>$destination,'background'=>$background,'phase'=>'queued','created'=>time(),'updated'=>time(),'components'=>array_values($components),'media_selection'=>$media,'cursor'=>0,'total'=>0,'error'=>''];self::checkpoint($state);
             if ($note!=='') { self::storeNote($id,$note); }if ($background) { self::schedule($id); }return $id;
         } catch (\Throwable $e) { if ($path && is_dir($path)) { delete_option('fwf_backup_note_'.$id);self::cleanJob($path);if (is_file($path.'/state.json')) { unlink($path.'/state.json'); }rmdir($path); }return new \WP_Error('FWF_BACKUP',$e->getMessage()); }
         finally { Lock::release('backup',$lock); }
@@ -387,6 +390,7 @@ final class Manager {
         if (!$confirm || !is_string($hash) || !is_string($revision)) { return new \WP_Error('FWF_BACKUP','Konfirmasi dan review backup diperlukan.'); }
         $review=self::inspect($id);if (is_wp_error($review)) { return $review; }
         if (!hash_equals($review['sha256'],$hash) || !hash_equals($review['revision'],$revision)) { return new \WP_Error('FWF_CONFLICT','Paket atau situs berubah setelah review.'); }
+        if(Storage::temporary()){return new \WP_Error('FWF_BACKUP','Pemulihan memerlukan penyimpanan privat server tetap untuk backup keselamatan dan journal. Hubungi pengelola; transit hanya untuk download.');}
         $safety=self::create(self::recoveryComponents($review['manifest']));if (is_wp_error($safety)) { return $safety; }
         $owner=Lock::acquire('backup');if (is_wp_error($owner)) { return $owner; }$updates=Lock::acquire('updates');$state=null;$databaseLease=null;$transaction=false;$dir=null;$restoreZip=null;
         try {

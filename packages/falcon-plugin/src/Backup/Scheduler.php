@@ -5,7 +5,7 @@ use FalconWF\Packages\Lock;
 final class Scheduler {
     public const HOOK='fwf_backup_scheduled';
     public static function policy(): array {
-        $value=get_option('fwf_backup_schedule',[]);$default=['enabled'=>false,'frequency'=>'daily','weekday'=>'1','time'=>'02:00','timezone'=>wp_timezone_string(),'components'=>['database','media','settings'],'owner'=>0,'generation'=>'','media_selection'=>null];
+        $value=get_option('fwf_backup_schedule',[]);$default=['enabled'=>false,'frequency'=>'daily','weekday'=>'1','monthday'=>'1','time'=>'02:00','timezone'=>wp_timezone_string(),'components'=>['database','media','settings'],'owner'=>0,'generation'=>'','media_selection'=>null];
         return is_array($value)?array_replace($default,$value):$default;
     }
     public static function revision(): string { return hash('sha256',wp_json_encode(self::policy())); }
@@ -15,9 +15,18 @@ final class Scheduler {
     /** Calculate in calendar days so DST does not shift the chosen wall-clock time. */
     public static function next(array $policy,int $after): int {
         $zone=new \DateTimeZone($policy['timezone']);$now=(new \DateTimeImmutable('@'.$after))->setTimezone($zone);[$hour,$minute]=array_map('intval',explode(':',$policy['time']));
-        for ($day=0;$day<9;$day++) {
-            $candidate=$now->modify('+'.$day.' days')->setTime($hour,$minute);
-            if ($candidate->getTimestamp()>$after && ($policy['frequency']==='daily' || $candidate->format('N')===$policy['weekday'])) { return $candidate->getTimestamp(); }
+        if($policy['frequency']==='monthly'){
+            $wanted=(int)($policy['monthday']??'1');
+            for($offset=0;$offset<3;$offset++){
+                $month=$now->modify('first day of this month')->modify('+'.$offset.' months');
+                $candidate=$month->setDate((int)$month->format('Y'),(int)$month->format('n'),min($wanted,(int)$month->format('t')))->setTime($hour,$minute);
+                if($candidate->getTimestamp()>$after){return $candidate->getTimestamp();}
+            }
+        }else{
+            for ($day=0;$day<9;$day++) {
+                $candidate=$now->modify('+'.$day.' days')->setTime($hour,$minute);
+                if ($candidate->getTimestamp()>$after && ($policy['frequency']==='daily' || $candidate->format('N')===$policy['weekday'])) { return $candidate->getTimestamp(); }
+            }
         }
         throw new \RuntimeException('Waktu jadwal tidak valid.');
     }
@@ -34,12 +43,16 @@ final class Scheduler {
         }
     }
     public static function save(array $input,mixed $revision): true|\WP_Error {
+        if(!current_user_can('fwf_manage_system')){return new \WP_Error('FWF_BACKUP_SCHEDULE','Tidak diizinkan.');}
+        $storage=Storage::provision();if(is_wp_error($storage)){return $storage;}
+        if(!empty($input['enabled']) && Storage::temporary()){return new \WP_Error('FWF_BACKUP_SCHEDULE','Backup otomatis memerlukan penyimpanan server tetap. Pengelola perlu menyiapkannya; backup download tetap tersedia.');}
         $lease=Lock::acquire('backup_schedule');if (is_wp_error($lease)) { return $lease; }
+        $input+=['monthday'=>'1'];
         $old=get_option('fwf_backup_schedule',false);$oldState=get_option('fwf_backup_schedule_state',false);$oldPause=get_option('fwf_backup_schedule_paused',false);$changed=false;
         try {
             if (!current_user_can('fwf_manage_system') || is_multisite()) { throw new \RuntimeException('Tidak diizinkan.'); }
             if (!is_string($revision) || !hash_equals(self::revision(),$revision)) { throw new \RuntimeException('Jadwal berubah. Muat ulang halaman.'); }
-            if (array_diff(array_keys($input),['enabled','frequency','weekday','time','components','media_selection']) || !is_bool($input['enabled']??null) || !in_array($input['frequency']??null,['daily','weekly'],true) || !is_string($input['weekday']??null) || !preg_match('/^[1-7]$/D',$input['weekday']) || !is_string($input['time']??null) || !preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/D',$input['time'])) { throw new \RuntimeException('Frekuensi, hari atau jam tidak valid.'); }
+            if (array_diff(array_keys($input),['enabled','frequency','weekday','monthday','time','components','media_selection']) || !is_bool($input['enabled']??null) || !in_array($input['frequency']??null,['daily','weekly','monthly'],true) || !is_string($input['weekday']??null) || !preg_match('/^[1-7]$/D',$input['weekday']) || !is_string($input['monthday']??null) || !preg_match('/^(?:[1-9]|[12][0-9]|3[01])$/D',$input['monthday']) || !is_string($input['time']??null) || !preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/D',$input['time'])) { throw new \RuntimeException('Frekuensi, hari atau jam tidak valid.'); }
             $parts=$input['components']??null;if (!is_array($parts) || !$parts || count(array_filter($parts,'is_string'))!==count($parts) || count(array_unique($parts,SORT_REGULAR))!==count($parts) || array_diff($parts,array_keys(Manager::components()))) { throw new \RuntimeException('Pilih komponen backup berkala yang valid.'); }
             $media=MediaSelection::ids($input['media_selection']??null);if ($media!==null) { if (!in_array('media',$parts,true) || in_array('database',$parts,true)) { throw new \RuntimeException('Media terpilih memerlukan media tanpa database seluruh situs.'); }MediaSelection::snapshot($media,false); }$input['media_selection']=$media;
             $policy=$input+['timezone'=>wp_timezone_string(),'owner'=>get_current_user_id(),'generation'=>wp_generate_uuid4()];$state=['generation'=>$policy['generation'],'next'=>$policy['enabled']?self::next($policy,time()):0,'claimed'=>0,'blocked'=>''];
@@ -86,6 +99,7 @@ final class Scheduler {
             if (!current_user_can('fwf_manage_system') || is_multisite()) {
                 $state['blocked']='Izin pemilik jadwal dicabut. Admin perlu menyimpan ulang jadwal.';self::put('fwf_backup_schedule_state',$state);wp_unschedule_hook(self::HOOK);throw new \RuntimeException($state['blocked']);
             }
+            if(Storage::temporary()){throw new \RuntimeException('Penyimpanan server tetap diperlukan untuk backup otomatis.');}
             $jobs=Manager::jobs();if (is_wp_error($jobs)) { throw new \RuntimeException($jobs->get_error_message()); }
             foreach ($jobs as $job) { if (!in_array($job['phase'],['done','failed','cancelled'],true)) { $run['status']='skipped';$run['error']='Dilewati: tugas backup lain masih aktif.';self::record($run);return; } }
             $id=Manager::queue($policy['components'],true,'Backup berkala — '.$policy['frequency'].' — '.wp_date('d M Y H:i',$due,new \DateTimeZone($policy['timezone'])),$policy['media_selection']??null);

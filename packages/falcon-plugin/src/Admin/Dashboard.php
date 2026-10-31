@@ -167,25 +167,28 @@ final class Dashboard {
     }
     private function backup(): void {
         $manager=\FalconWF\Backup\Manager::class;$dir=$manager::directory();
-        echo '<p>Backup lokal tersimpan di folder privat pada server situs ini; Download ZIP menyimpan salinannya ke komputer Anda.</p>';
+        echo '<p>Pilih backup manual ke komputer atau server, atau aktifkan backup otomatis di server. Ruang privat disiapkan oleh Falcon; konten situs tidak diubah.</p>';
         echo '<p>Backup mencakup komponen yang Anda pilih. Restore memerlukan review dan konfirmasi, mempertahankan akun serta pilihan theme/plugin aktif. Ukuran mengikuti kapasitas server. Pemulihan alpha masih terbatas pada lingkungan local/staging dan versi yang sama.</p>';
         echo '<section class="fwf-panel" data-fwf-backup-storage><h2>Penyimpanan backup</h2>';
         if (is_wp_error($dir)) {
-            echo '<p><strong>Belum siap.</strong> '.esc_html($dir->get_error_message()).'</p>';
+            echo '<p><strong>Persiapan otomatis.</strong> Jalankan Backup sekarang; Falcon akan menyiapkan ruang yang aman. Jika hosting membatasi akses, pengelola akan mendapat petunjuk pemeriksaan.</p><details><summary>Diagnosis pengelola</summary><p>'.esc_html($dir->get_error_message()).'</p><pre>'.esc_html(wp_json_encode(get_option('fwf_backup_storage_diagnostics',[]),JSON_PRETTY_PRINT)).'</pre></details>';
             if (!defined('FWF_BACKUP_DIR') && get_option('fwf_backup_directory',false)===false) {
                 echo '<p>Siapkan sekali untuk situs ini. Falcon WF mencoba membuat folder privat di luar folder publik server; tidak mengubah konten atau menghapus arsip.</p>';
                 $this->start('setup_backup_storage','backup');$this->end('Siapkan penyimpanan backup');
                 echo '<details><summary>Pengaturan pengelola hosting</summary><p>Jika setup otomatis ditolak server, pengelola hosting menyediakan folder privat yang dapat ditulis (0700) di luar document root. Jangan memakai uploads atau folder publik.</p>';
                 $this->start('setup_backup_storage','backup');$this->text('backup_directory','Alamat folder privat pada server');$this->end('Gunakan folder privat ini');echo '</details>';
             }
+            $this->manualBackup();
             echo '<p>Sesudah penyimpanan siap, tersedia: backup manual dan harian/mingguan, pilihan media, estimasi ukuran, catatan, retensi dan perlindungan arsip, Download ZIP, Import ZIP, Restore serta Delete.</p></section>';return;
         }
-        echo '<p><strong>Siap.</strong> Backup disimpan privat pada server ini. Pengaturan dan arsip lama tetap digunakan.</p><details><summary>Informasi pengelola hosting</summary><p>Lokasi: <code>'.esc_html($dir).'</code></p></details></section>';
+        if(\FalconWF\Backup\Storage::temporary()){echo '<p>Download ke komputer tersedia. Penyimpanan server tetap perlu disiapkan pengelola sebelum backup otomatis atau pemulihan dijalankan.</p>';}
+        echo '<p><strong>Siap.</strong> Backup diproses privat pada server ini. Pengaturan dan arsip lama tetap digunakan.</p><details><summary>Informasi pengelola hosting</summary><p>Lokasi: <code>'.esc_html($dir).'</code></p><pre>'.esc_html(wp_json_encode(get_option('fwf_backup_storage_diagnostics',[]),JSON_PRETTY_PRINT)).'</pre></details></section>';
+        $this->manualBackup();
         $this->recoveryPanel();$scheduler=\FalconWF\Backup\Scheduler::class;$schedule=$scheduler::policy();$state=get_option('fwf_backup_schedule_state',[]);
         echo '<section class="fwf-panel"><h2>Backup berkala</h2><p>Pilih jadwal dan isi backup. Zona waktu mengikuti pengaturan WordPress saat jadwal disimpan; saat ini <strong>'.esc_html(wp_timezone_string()).'</strong>. Simpan ulang jadwal setelah mengubah zona waktu situs.</p>';
         $this->start('save_backup_schedule','backup');echo '<input type="hidden" name="revision" value="'.esc_attr($scheduler::revision()).'"><p><label><input type="checkbox" name="enabled" value="yes" '.checked($schedule['enabled'],true,false).'> Aktifkan backup berkala</label></p><p><label for="fwf-backup-frequency">Frekuensi</label><br><select id="fwf-backup-frequency" name="frequency">';
-        foreach (['daily'=>'Harian','weekly'=>'Mingguan'] as $value=>$label) { echo '<option value="'.esc_attr($value).'" '.selected($schedule['frequency'],$value,false).'>'.esc_html($label).'</option>'; }echo '</select></p><p><label for="fwf-backup-weekday">Hari (untuk jadwal mingguan)</label><br><select id="fwf-backup-weekday" name="weekday">';
-        foreach (['1'=>'Senin','2'=>'Selasa','3'=>'Rabu','4'=>'Kamis','5'=>'Jumat','6'=>'Sabtu','7'=>'Minggu'] as $value=>$label) { echo '<option value="'.esc_attr($value).'" '.selected($schedule['weekday'],(string)$value,false).'>'.esc_html($label).'</option>'; }echo '</select></p><p><label for="fwf-backup-time">Jam backup</label><br><input id="fwf-backup-time" type="time" name="time" value="'.esc_attr($schedule['time']).'" required></p><fieldset><legend>Komponen backup berkala</legend>';
+        foreach (['daily'=>'Harian','weekly'=>'Mingguan','monthly'=>'Bulanan'] as $value=>$label) { echo '<option value="'.esc_attr($value).'" '.selected($schedule['frequency'],$value,false).'>'.esc_html($label).'</option>'; }echo '</select></p><p><label for="fwf-backup-weekday">Hari (untuk jadwal mingguan)</label><br><select id="fwf-backup-weekday" name="weekday">';
+        foreach (['1'=>'Senin','2'=>'Selasa','3'=>'Rabu','4'=>'Kamis','5'=>'Jumat','6'=>'Sabtu','7'=>'Minggu'] as $value=>$label) { echo '<option value="'.esc_attr($value).'" '.selected($schedule['weekday'],(string)$value,false).'>'.esc_html($label).'</option>'; }echo '</select></p><p><label for="fwf-backup-monthday">Tanggal (jadwal bulanan; bulan pendek memakai hari terakhir)</label><br><input id="fwf-backup-monthday" name="monthday" type="number" min="1" max="31" value="'.esc_attr($schedule['monthday']).'" required></p><p><label for="fwf-backup-time">Jam backup</label><br><input id="fwf-backup-time" type="time" name="time" value="'.esc_attr($schedule['time']).'" required></p><fieldset><legend>Komponen backup berkala</legend>';
         foreach ($manager::components() as $value=>$label) { echo '<p><label><input type="checkbox" name="scheduled_components[]" value="'.esc_attr($value).'" '.checked(in_array($value,$schedule['components'],true),true,false).'> '.esc_html($label).'</label></p>'; }echo '</fieldset>';$this->mediaPicker('scheduled',$schedule['media_selection']??null);$this->end('Simpan jadwal');
         $next=$schedule['enabled'] && !get_option('fwf_backup_schedule_paused',false) && empty($state['blocked'])?wp_next_scheduled($scheduler::HOOK,[$schedule['generation'],$state['next']??0]):false;
         echo '<p>Jadwal berikutnya: <strong>'.($next?esc_html(wp_date('d M Y · H:i',$next,new \DateTimeZone($schedule['timezone'])).' ('.$schedule['timezone'].')'):'Belum aktif / belum terjadwal').'</strong>.</p><p>Jika terlambat, cukup satu backup susulan. Tugas aktif tidak ditumpuk; alasannya dicatat. Backup berkala memakai retensi dan perlindungan arsip yang sama. WP-Cron bergantung kunjungan; untuk situs sepi, gunakan cron server.</p>';
@@ -195,17 +198,13 @@ final class Dashboard {
         echo '<h2>Retensi backup di server</h2><p>'.count($archives).' arsip · '.count($protected).' terlindungi · total '.esc_html(size_format(array_sum(array_column($archives,'size')),2)).'. Arsip terlindungi tidak masuk batas jumlah, tetapi tetap memakai ruang disk.</p>';
         $this->start('save_backup_retention','backup');echo '<input type="hidden" name="revision" value="'.esc_attr($manager::retentionRevision()).'"><p><label><input type="checkbox" name="enabled" value="yes" '.checked($policy['enabled'],true,false).'> Aktifkan penghapusan otomatis arsip lama</label></p><p><label for="fwf-backup-limit">Simpan maksimal backup biasa (tidak terlindungi)</label><br><input id="fwf-backup-limit" name="limit" type="number" min="1" max="1000" value="'.(int)$policy['limit'].'" required></p><p>Setelah backup baru berhasil dan lolos pemeriksaan, arsip biasa paling lama dihapus permanen sampai batas terpenuhi. Backup gagal tidak menghapus arsip lama. Menyimpan pengaturan ini belum menghapus file. Backup keselamatan sebelum restore tidak memicu penghapusan.</p>';$this->end('Simpan retensi');
         $last=get_option('fwf_backup_retention_result',false);if (is_array($last)) { echo '<p>Retensi terakhir: '.(int)$last['deleted'].' arsip dihapus'.($last['warning']!==''?' · '.esc_html($last['warning']):'').'.</p>'; }
-        $estimates=$manager::estimates();
-        if (is_wp_error($estimates)) { echo '<p>'.esc_html($estimates->get_error_message()).'</p>'; return; }
-        echo '<p>Estimasi ukuran sebelum kompresi. Ukuran ZIP akhir bisa berbeda; angka database berupa perkiraan encoding, termasuk overhead. File media/plugin/theme dihitung dari berkas yang masuk backup.</p>';
-        $this->start('create_backup','backup');
-        foreach ($manager::components() as $key=>$label) { echo '<p><label><input type="checkbox" name="components[]" value="'.esc_attr($key).'" data-bytes="'.esc_attr($estimates[$key]['bytes']).'" checked> '.esc_html($label).' — <strong data-fwf-component-size>'.esc_html(size_format($estimates[$key]['bytes'],2)).'</strong><span data-fwf-component-files>'.($estimates[$key]['files']?' ('.esc_html($estimates[$key]['files']).' file)':'').'</span>'.'</label></p>'; }
-        $this->mediaPicker('manual');
-        echo '<p><strong>Total estimasi pilihan: <output aria-live="polite" data-fwf-backup-total>'.esc_html(size_format($manager::selectedSize($estimates,array_keys($manager::components())),2)).'</output></strong></p><p data-fwf-settings-included>Pengaturan sudah termasuk database; tidak dihitung dua kali.</p><noscript><p>Tanpa JavaScript, total di atas adalah semua komponen bawaan; ubah pilihan lalu jalankan backup untuk pemeriksaan disk aktual.</p></noscript>';
-        echo '<p><label for="fwf-backup-note">Catatan backup (opsional)</label><br><textarea id="fwf-backup-note" name="backup_note" maxlength="1000" rows="2" placeholder="Contoh: sebelum update desain beranda"></textarea></p>';
-        $this->end('Mulai backup latar belakang');
         echo '<h2>Tugas backup</h2><p>Progres tersimpan. WP-Cron menjalankan antrean saat situs menerima kunjungan; untuk situs sepi, gunakan cron server. Snapshot database diambil dalam satu proses; bila terputus, tahap snapshot diulang. Setelah snapshot selesai, ZIP dilanjutkan per bagian. Restore tetap proses konfirmasi terpisah.</p>';
         $jobs=$manager::jobs();
+        $pending=get_transient('fwf_backup_download_'.get_current_user_id());
+        if(is_array($jobs) && is_string($pending) && ($jobs[$pending]['phase']??null)==='done'){
+            echo '<section><h2>Backup siap diunduh</h2><iframe name="fwf-backup-download-frame" title="Unduhan backup" hidden></iframe>';
+            $this->start('download_backup','backup');echo '<input type="hidden" name="backup_id" value="'.esc_attr($pending).'">';$this->end('Download ZIP sekarang');echo '<span data-fwf-auto-download="'.esc_attr($pending).'"></span><p>Salinan server tidak langsung dihapus; Anda dapat mengunduh ulang dari daftar arsip.</p></section>';
+        }
         if (is_wp_error($jobs)) { echo '<p>'.esc_html($jobs->get_error_message()).'</p>'; }
         else {
             echo '<div data-fwf-backup-jobs data-labels="'.esc_attr(wp_json_encode($manager::phases())).'" data-url="'.esc_url(admin_url('admin-ajax.php')).'" data-nonce="'.esc_attr(wp_create_nonce('fwf_backup_jobs')).'">';
@@ -238,6 +237,20 @@ final class Dashboard {
             $this->start('save_backup_note','backup');echo '<input type="hidden" name="backup_id" value="'.esc_attr($id).'"><p><label for="fwf-note-'.esc_attr($id).'">Catatan backup (maks. 1000 karakter)</label><br><textarea id="fwf-note-'.esc_attr($id).'" name="backup_note" maxlength="1000" rows="3">'.esc_textarea((string)$item['note']).'</textarea></p>';$this->end('Simpan catatan');echo '</details></section>';
         }
         echo '<p>Storage cloud masih tahap berikutnya. Tidak mengirim backup ke Google Drive pada tahap ini.</p>';
+    }
+    private function manualBackup(): void {
+        $manager=\FalconWF\Backup\Manager::class;
+        $estimates=$manager::estimates();
+        if (is_wp_error($estimates)) { echo '<p>'.esc_html($estimates->get_error_message()).'</p>'; return; }
+        echo '<p>Estimasi ukuran sebelum kompresi. Ukuran ZIP akhir bisa berbeda; angka database berupa perkiraan encoding, termasuk overhead. File media/plugin/theme dihitung dari berkas yang masuk backup.</p>';
+        echo '<section class="fwf-panel"><h2>Backup manual</h2>';
+        $this->start('create_backup','backup');
+        echo '<p><label for="fwf-backup-destination">Simpan hasil backup</label><br><select id="fwf-backup-destination" name="backup_destination"><option value="download">Download ke komputer</option><option value="server"'.(\FalconWF\Backup\Storage::temporary()?' disabled':'').'>Simpan di server</option></select></p><p>Falcon menyiapkan arsip secara privat. Untuk tujuan komputer, unduhan dimulai setelah ZIP selesai; tombol Download tetap tersedia jika browser menahannya. Online storage menyusul.</p>';
+        foreach ($manager::components() as $key=>$label) { echo '<p><label><input type="checkbox" name="components[]" value="'.esc_attr($key).'" data-bytes="'.esc_attr($estimates[$key]['bytes']).'" checked> '.esc_html($label).' — <strong data-fwf-component-size>'.esc_html(size_format($estimates[$key]['bytes'],2)).'</strong><span data-fwf-component-files>'.($estimates[$key]['files']?' ('.esc_html($estimates[$key]['files']).' file)':'').'</span>'.'</label></p>'; }
+        $this->mediaPicker('manual');
+        echo '<p><strong>Total estimasi pilihan: <output aria-live="polite" data-fwf-backup-total>'.esc_html(size_format($manager::selectedSize($estimates,array_keys($manager::components())),2)).'</output></strong></p><p data-fwf-settings-included>Pengaturan sudah termasuk database; tidak dihitung dua kali.</p><noscript><p>Tanpa JavaScript, total di atas adalah semua komponen bawaan; ubah pilihan lalu jalankan backup untuk pemeriksaan disk aktual.</p></noscript>';
+        echo '<p><label for="fwf-backup-note">Catatan backup (opsional)</label><br><textarea id="fwf-backup-note" name="backup_note" maxlength="1000" rows="2" placeholder="Contoh: sebelum update desain beranda"></textarea></p>';
+        $this->end('Backup sekarang');echo '</section>';
     }
     private function seo(): void {
         echo '<section><h2>SEO / GEO dasar</h2>';
@@ -344,10 +357,10 @@ final class Dashboard {
                     $result=\FalconWF\Backup\Manager::recovery($p['journal_id']??null);delete_transient('fwf_backup_recovery_review_'.get_current_user_id());if (!is_wp_error($result)) { set_transient('fwf_backup_recovery_review_'.get_current_user_id(),$result,10*MINUTE_IN_SECONDS); }break;
                 case 'apply_recovery':
                     $recovery=get_transient('fwf_backup_recovery_review_'.get_current_user_id());delete_transient('fwf_backup_recovery_review_'.get_current_user_id());$result=is_array($recovery) && ($recovery['id']??'')===($p['journal_id']??null)?\FalconWF\Backup\Manager::recovery($recovery['id'],$recovery['review'],($p['confirm']??'')==='yes'):new \WP_Error('FWF_BACKUP_RECOVERY','Review pemulihan sudah kedaluwarsa.');break;
-                case 'create_backup': $result=\FalconWF\Backup\Manager::queue($p['components']??null,true,$p['backup_note']??'',($p['manual_media_mode']??'all')==='selected'?($p['manual_media_ids']??''):null);break;
+                case 'create_backup': $destination=$p['backup_destination']??'server';$result=\FalconWF\Backup\Manager::queue($p['components']??null,true,$p['backup_note']??'',($p['manual_media_mode']??'all')==='selected'?($p['manual_media_ids']??''):null,$destination);if(!is_wp_error($result)){delete_transient('fwf_backup_download_'.get_current_user_id());if($destination==='download'){set_transient('fwf_backup_download_'.get_current_user_id(),$result,DAY_IN_SECONDS);}}break;
                 case 'resume_backup': $result=\FalconWF\Backup\Manager::control($p['job_id']??null);break;
                 case 'cancel_backup': $result=\FalconWF\Backup\Manager::control($p['job_id']??null,true);break;
-                case 'save_backup_schedule': $result=\FalconWF\Backup\Scheduler::save(['enabled'=>($p['enabled']??'')==='yes','frequency'=>$p['frequency']??null,'weekday'=>$p['weekday']??null,'time'=>$p['time']??null,'components'=>$p['scheduled_components']??null,'media_selection'=>($p['scheduled_media_mode']??'all')==='selected'?($p['scheduled_media_ids']??''):null],$p['revision']??null);break;
+                case 'save_backup_schedule': $result=\FalconWF\Backup\Scheduler::save(['enabled'=>($p['enabled']??'')==='yes','frequency'=>$p['frequency']??null,'weekday'=>$p['weekday']??null,'monthday'=>$p['monthday']??'1','time'=>$p['time']??null,'components'=>$p['scheduled_components']??null,'media_selection'=>($p['scheduled_media_mode']??'all')==='selected'?($p['scheduled_media_ids']??''):null],$p['revision']??null);break;
                 case 'save_backup_retention': $result=\FalconWF\Backup\Manager::saveRetention(($p['enabled']??'')==='yes',$p['limit']??null,$p['revision']??null);break;
                 case 'protect_backup': $result=\FalconWF\Backup\Manager::protect($p['backup_id']??null,true);break;
                 case 'unprotect_backup': $result=\FalconWF\Backup\Manager::protect($p['backup_id']??null,false);break;
@@ -371,7 +384,7 @@ final class Dashboard {
                     $result=is_array($review) && ($review['id']??'')===($p['backup_id']??null)?\FalconWF\Backup\Manager::restore($review['id'],$review['sha256'],$review['revision'],($p['confirm']??'')==='yes'):new \WP_Error('FWF_BACKUP','Review pemulihan sudah kedaluwarsa.');break;
                 case 'download_backup':
                     $result=\FalconWF\Backup\Manager::path($p['backup_id']??null);
-                    if (!is_wp_error($result)) { nocache_headers();header('Content-Type: application/zip');header('X-Content-Type-Options: nosniff');header('Content-Disposition: attachment; filename="falcon-backup-'.basename($result).'"');header('Content-Length: '.filesize($result));readfile($result);exit; }break;
+                    if (!is_wp_error($result)) { if(get_transient('fwf_backup_download_'.get_current_user_id())===($p['backup_id']??null)){delete_transient('fwf_backup_download_'.get_current_user_id());}nocache_headers();header('Content-Type: application/zip');header('X-Content-Type-Options: nosniff');header('Content-Disposition: attachment; filename="falcon-backup-'.basename($result).'"');header('Content-Length: '.filesize($result));readfile($result);exit; }break;
                 case 'save_project': $result=ProjectManager::save(['repo'=>$p['project_repo']??null,'project_id'=>$p['project_id']??null,'theme_id'=>$p['theme_id']??null,'tag'=>$p['project_tag']??null]); break;
                 case 'disconnect_project': delete_option('fwf_project_connection');delete_option('fwf_project_candidate'); break;
                 case 'check_project': $result=(new ProjectManager())->check(); break;

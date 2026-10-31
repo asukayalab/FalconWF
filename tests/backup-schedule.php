@@ -14,8 +14,13 @@ if($mode==='capture'){
  $input=['enabled'=>true,'frequency'=>'daily','weekday'=>'1','time'=>'02:15','components'=>['settings']];
  $policy=$input+['timezone'=>'Asia/Jakarta'];$after=strtotime('2026-10-08T01:00:00+07:00');$ok(S::next($policy,$after)===strtotime('2026-10-08T02:15:00+07:00'),'daily schedule uses chosen local time');
  $policy['frequency']='weekly';$ok(S::next($policy,$after)===strtotime('2026-10-12T02:15:00+07:00'),'weekly schedule uses chosen weekday');
+ $monthly=$policy;$monthly['frequency']='monthly';$monthly['monthday']='31';
+ $ok(S::next($monthly,strtotime('2026-01-31T03:00:00+07:00'))===strtotime('2026-02-28T02:15:00+07:00'),'monthly31 clamps to February end');
+ $ok(S::next($monthly,strtotime('2028-01-31T03:00:00+07:00'))===strtotime('2028-02-29T02:15:00+07:00'),'monthly schedule respects leap years');
+ $ok(S::next($monthly,strtotime('2026-02-28T03:00:00+07:00'))===strtotime('2026-03-31T02:15:00+07:00'),'monthly31 returns to original day after short month');
+ $ok(S::next($monthly,strtotime('2026-12-31T03:00:00+07:00'))===strtotime('2027-01-31T02:15:00+07:00'),'monthly schedule crosses year');
  $policy['frequency']='daily';$policy['timezone']='America/New_York';$policy['time']='09:00';$after=strtotime('2026-03-07T10:00:00-05:00');$ok(S::next($policy,$after)===strtotime('2026-03-08T09:00:00-04:00'),'DST keeps next calendar wall-clock time');
- $rev=S::revision();$bad=$input;$bad['time']='24:00';$ok(is_wp_error(S::save($bad,$rev)),'invalid time rejected');$bad=$input;$bad['components']=['unknown'];$ok(is_wp_error(S::save($bad,$rev)),'unknown component rejected');
+ $rev=S::revision();$bad=$input+['monthday'=>'32'];$bad['frequency']='monthly';$ok(is_wp_error(S::save($bad,$rev)),'monthly invalid date rejected');$bad=$input;$bad['time']='24:00';$ok(is_wp_error(S::save($bad,$rev)),'invalid time rejected');$bad=$input;$bad['components']=['unknown'];$ok(is_wp_error(S::save($bad,$rev)),'unknown component rejected');
  $must(S::save($input,$rev));$ok(is_wp_error(S::save($input,$rev)),'stale schedule revision rejected');$policy=S::policy();$state=get_option('fwf_backup_schedule_state');$first=wp_next_scheduled(S::HOOK,[$policy['generation'],$state['next']]);S::reconcile();S::reconcile();
  $events=0;foreach(_get_cron_array() as $hooks)$events+=count($hooks[S::HOOK]??[]);$ok($events===1 && $first===$state['next'],'reconciliation preserves exactly one event');
  $due=time()-5*DAY_IN_SECONDS;$state['next']=$due;update_option('fwf_backup_schedule_state',$state,false);wp_unschedule_hook(S::HOOK);$must(wp_schedule_single_event($due,S::HOOK,[$policy['generation'],$due],true));

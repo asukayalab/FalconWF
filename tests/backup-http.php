@@ -15,7 +15,7 @@ if ($mode==='capture') {
  $snapshot=get_option($key);$id=$args[2]??'';if (($snapshot['owner']??null)!==$owner || !preg_match('/^[a-f0-9-]{36}$/D',$id) || !str_starts_with(get_option('fwf_identity')['name']??'','FWF HTTP '.$owner.' ')) { throw new RuntimeException('Owner mismatch.'); }
  for ($i=0;$i<10;$i++) { do_action('fwf_backup_step',$id);$jobs=FalconWF\Backup\Manager::jobs();if (is_wp_error($jobs)) { throw new RuntimeException($jobs->get_error_message()); }$state=$jobs[$id];if ($state['phase']==='done') { break; }if ($state['phase']==='failed') { throw new RuntimeException($state['error']); } }
  if ($state['phase']!=='done') { throw new RuntimeException('Job incomplete.'); }
- FalconWF\Backup\Manager::forget($id);
+ // Keep completed job state, matching the real worker and download hand-off. Cleanup owns removal.
 } elseif ($mode==='cleanup') {
  $snapshot=get_option($key);if (!is_array($snapshot) || $snapshot['owner']!==$owner) { throw new RuntimeException('Owner mismatch.'); }
  if(isset($snapshot['journal']) && is_dir(FWF_BACKUP_DIR.'/restore-'.$snapshot['journal'])){$review=FalconWF\Backup\Manager::recovery($snapshot['journal']);if(is_wp_error($review) || $review['files']!==0)throw new RuntimeException('Owned empty journal cleanup refused');$result=FalconWF\Backup\Manager::recovery($review['id'],$review['review'],true);if(is_wp_error($result))throw new RuntimeException('Owned journal cleanup failed');}

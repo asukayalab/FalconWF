@@ -47,3 +47,7 @@ Halaman & Desain tersedia lokal pada alpha.19: pointing per Page melalui assignm
 ## Roadmap revisi 31 Oktober 2026
 
 Enam kelompok disetujui: (1) konsistensi paket; (2) backup praktis dasar, cloud menyusul; (3) blueprint/setup website; (4) distribusi/update sederhana; (5) konteks MCP/client/provider nyata; (6) trial/gate0.1. UI/UX dan handbook mengikuti tiap kelompok. Pengguna mengotorisasi kelompok1 terlebih dahulu; alpha.20 dikerjakan lokal, kelompok2–6 belum otomatis dimulai. Keluhan/keputusan lengkap ada di session note lokal31Oktober, bukan transkrip yang dimasukkan Git.
+
+## Kelompok2 — alpha.21 lokal
+
+Pengguna mengotorisasi nomor2. Inti kode manual server/download, provisioning privat dan monthly selesai/lulus lokal; cloud tetap menyusul. Hosting Docker/panel telah dikonfirmasi pengguna, tetapi panel/akses/mount belum diidentifikasi. Siapkan volume privat operator dan pasang/uji build sebelum menutup hosted acceptance. Panduan guides/BACKUP-HOSTING-DOCKER.md tersedia. Jangan otomatis memulai kelompok3 atau mengklaim seluruh pekerjaan hosting selesai.

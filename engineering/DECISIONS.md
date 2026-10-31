@@ -207,3 +207,10 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Mempertahankan syarat index.php installer dan mewajibkannya sejak build. Style/header dan allowlist/size diperiksa sebelum artefak dapat dinyatakan berhasil. Binary assets disalin byte-exact; hanya teks memproses placeholder versi.
 - Error validasi dipecah tanpa melonggarkan dirty/source_commit/identity/channel/compatibility guard. Metadata check tidak menyatakan checksum ZIP telah lulus; Apply mengunduh/memeriksa sebelum mengganti file.
 - Tidak mengubah release proyek milik klien, tidak overwrite release published, tidak deploy/activate theme. Kelompok1 tidak mencakup backup, blueprint atau discovery/otomatisasi rilis proyek kelompok4.
+
+## Alpha.21 — backup praktis tanpa engine kedua
+
+- GET storage tetap read-only. Provision idempotent pada aktivasi dan nonce-protected backup/schedule operation; configured location authoritative. Private account home fallback, lalu private OS temp hanya untuk transit download. Tidak melemahkan aturan public-root/symlink/mode/marker.
+- Temporary record tidak boleh menjadi server archive/schedule/restore safety-journal. Container persistent volume adalah tugas pengelola; jangan mengklaim plugin dapat mount Docker atau temp durable.
+- Manual destination metadata dan pending transient per-user mengarahkan hasil engine existing ke POST download existing. Tidak ada auto-deletion setelah transfer yang belum terbukti tersimpan. Visible retry tetap tersedia jika browser memblokir auto-download.
+- Monthly calendar clamp mempertahankan tanggal asli, timezone/claims/overlap menggunakan Scheduler existing. Cloud, migrasi lokasi arsip dan production DR bukan scope.

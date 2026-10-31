@@ -340,3 +340,13 @@ Cleanup final baca-saja: owned HTTP Pages0, fixture users0, per-page locks0, tem
 - Full npm run test:integration exit0, PHP syntax56/installed FP+FT runtime60 hashes match build. Backup/recovery/media/schedule/retention/jobs/project installer/MCP23/OAuth59/admin128/frontend10/project44 passed. Site settings restored/verified, worker restarted. Existing WordPress.org local connectivity warnings did not fail the suite.
 - Logs ignored local/artifacts/project-package-alpha20-{verify,contract,project-update,integration}.log. Contract output/source temporary fixtures cleaned; project fixture cleanup verified after request shutdown.
 - Guides/handbook draft.3 updated. Core ZIP alpha.20 is local dirty-provenance review artifact; no commit/push/publish, no hosting/active-theme change. Groups2–6 not started.
+
+## Backup praktis alpha.21 — 31 Oktober 2026, lokal
+
+- npm run verify exit0,54mapped paths/59tests. Auto-download unit checks one submit per requested archive and visible fallback when sessionStorage unavailable.
+- Owned private-transit10checks passed: blocked primary/HOME, automatic temporary0700, repeated provisioning, server/schedule denial on temp, actual download ZIP through existing engine, unsupported destination and private HOME preference.
+- Monthly calendar cases: end-of-February, leap year, original date restoration and year rollover; invalid32 rejected. Schedule setup12/execution13/process-death4 pass.
+- Backup HTTP28checks pass: monthly31 actual form persistence, requested computer ZIP exposes authenticated auto-download form, POST stream clears trigger but keeps archive. Existing nonce/editor/public ZIP denial, restore and recovery behavior preserved. Initial HTTP fixture forgot completed job immediately, unlike real worker; helper adjusted to retain until owned cleanup, final full regression passes.
+- Full npm run test:integration exit0; PHP56/runtime60hashes match build. Existing recovery/media/retention/jobs/project updater46/MCP23/OAuth59/admin128/frontend10/project44 passed. Site settings restored/verified and worker restarted.
+- Logs ignored local/artifacts/backup-practical-alpha21-{verify,transit,integration}.log.
+- Hosting diagnosis read-only: user confirms Docker/panel container; Site Health WP /var/www/html and WordPress directories writable, Apache Debian/PHP8.3.35. Parent/mount ownership not directly inspected; permission cause not claimed confirmed. Backup UI still unconfigured. Panel identity/access unknown to user. No hosting setup/deploy/theme changes performed; persistent volume and hosted acceptance remain pending, with operator guide ready. Cloud deferred.

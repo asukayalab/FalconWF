@@ -19,13 +19,13 @@ try{
  for(let i=0;i<20;i++){try{await fetch(base+'/wp-login.php',{headers:{Connection:'close'}});break;}catch(e){if(i===19)throw e;await new Promise(resolve=>setTimeout(resolve,200));}}
  const admin=await login(fixtures.administrator),editor=await login(fixtures.editor);
  const screen=()=>admin('/wp-admin/admin.php?page=falcon-wf-backup');let html=(await screen()).body;
- ok(html.includes('Siapkan penyimpanan backup') && !html.includes('name="components[]"'),'unconfigured actual HTTP screen offers setup before archive actions');
+ ok(html.includes('Siapkan penyimpanan backup') && html.includes('name="backup_destination"'),'unconfigured HTTP screen offers manual backup without requiring technical setup');
  const nonce=html.match(/name="operation" value="setup_backup_storage"[\s\S]*?name="_wpnonce" value="([^"]+)"/)?.[1];assert(nonce);
  const submit=(request,values)=>request('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'setup_backup_storage',screen:'backup',_wpnonce:nonce,...values})});
  ok((await submit(admin,{backup_directory:path,_wpnonce:'invalid'})).status===403,'HTTP storage setup requires dedicated nonce');
  ok((await submit(editor,{backup_directory:path})).status===403,'HTTP editor cannot register storage');
  await submit(admin,{backup_directory:'/var/www/html'});html=(await screen()).body;
- ok(html.includes('Siapkan penyimpanan backup') && !html.includes('name="components[]"'),'HTTP rejects public WordPress folder without enabling archive actions');
+ ok(html.includes('Siapkan penyimpanan backup') && html.includes('name="backup_destination"'),'HTTP rejects public folder while retaining the manual backup entry');
  ok((await submit(admin,{backup_directory:path})).status===302,'HTTP administrator registers operator-provided private directory');html=(await screen()).body;
  ok(html.includes('<strong>Siap.</strong>') && html.includes('name="components[]"') && html.includes('Simpan jadwal') && html.includes('Simpan retensi') && html.includes('Import dan periksa ZIP'),'successful HTTP setup restores approved forms');
  await submit(admin,{backup_directory:'/var/www/html'});html=(await screen()).body;

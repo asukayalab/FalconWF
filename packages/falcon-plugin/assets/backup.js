@@ -77,3 +77,11 @@
     refresh();
   }
 })();
+
+// Submit the existing nonce-protected download form once per requested archive.
+(() => {
+  const marker=document.querySelector('[data-fwf-auto-download]');if(!marker)return;
+  const form=marker.previousElementSibling;if(!(form instanceof HTMLFormElement))return;
+  form.target='fwf-backup-download-frame';
+  try{const key='fwf-backup-download-'+marker.dataset.fwfAutoDownload;if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');form.requestSubmit();}catch{/* The visible Download button remains usable. */}
+})();

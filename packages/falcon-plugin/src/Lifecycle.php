@@ -10,6 +10,8 @@ final class Lifecycle {
         }
         $result=Migrations\Runner::run();
         if (is_wp_error($result)) { wp_die(esc_html($result->get_error_message())); }
+        wp_get_current_user()->get_role_caps();
+        Backup\Storage::provision();
         Backup\Scheduler::activate();
     }
     public static function deactivate(): void { Backup\Scheduler::deactivate(); wp_clear_scheduled_hook('fwf_daily_cleanup');wp_unschedule_hook('fwf_backup_step'); /* Preserve data and active theme. */ }

@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build lokal produk/FP: 0.1.0-alpha.20; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.21; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan dua belas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -73,3 +73,5 @@ Alpha.18: penyimpanan Backup & Restore dapat disiapkan melalui capability/nonce 
 Alpha.19 lokal: Halaman & Desain menampilkan Page (20 per halaman) dan named template theme aktif, Apply per Page, Edit isi dan Lihat/Preview. Assignment memakai native _wp_page_template, sehingga editor WordPress dan dashboard membaca data yang sama. Capability/nonce/confirmation/revision, lease per Page dan native edit-lock menjaga boundary; tidak menulis judul/body/URL/status/homepage/theme. Bukan batch mapping, registry peran, blueprint importer atau MCP tool baru. Pengujian final dicatat di EVIDENCE.md. Belum publish/deploy.
 
 Alpha.20 lokal (kelompok1 roadmap revisi): builder/verifier proyek membaca kontrak runtime bersama; style/index wajib, JS/module/SVG/gambar/font didukung dan byte biner dipertahankan. Error provenance/identitas/versi/kanal dan copy check/apply diperjelas. Tidak mengubah alur backup, blueprint atau discovery updater. Bukti final di EVIDENCE.md; belum publish/deploy.
+
+Alpha.21 lokal: aktivasi/aksi backup menyiapkan private storage otomatis, termasuk fallback transit privat untuk download saja. Backup manual server/download satu engine; per-user pending download POST ber-nonce dengan tombol retry dan tanpa auto-delete archive. Monthly1–31 clamp bulan pendek ditambahkan. Configured storage/arsip tidak dipindah. Arsip server/jadwal/restore memerlukan storage tetap; hosting container perlu volume privat pengelola. Cloud tetap ditunda; hosted acceptance belum selesai.
