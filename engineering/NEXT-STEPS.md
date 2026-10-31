@@ -43,3 +43,7 @@ Sesudah tiga jalur di atas berjalan: recheck instalasi baru/update, pemulihan ya
 ## Kelanjutan 30 Oktober 2026
 
 Halaman & Desain tersedia lokal pada alpha.19: pointing per Page melalui assignment native, tanpa batch/role registry/blueprint importer. Berikutnya distribusi definisi custom field proyek (kontrak dan review/migrasi lebih dahulu), discovery konteks MCP dan uji client/provider nyata. Review backup/acceptance hosting tetap terbuka. Handbook lokal diperbarui; repo handbook dan desain tetap terpisah dari core.
+
+## Roadmap revisi 31 Oktober 2026
+
+Enam kelompok disetujui: (1) konsistensi paket; (2) backup praktis dasar, cloud menyusul; (3) blueprint/setup website; (4) distribusi/update sederhana; (5) konteks MCP/client/provider nyata; (6) trial/gate0.1. UI/UX dan handbook mengikuti tiap kelompok. Pengguna mengotorisasi kelompok1 terlebih dahulu; alpha.20 dikerjakan lokal, kelompok2–6 belum otomatis dimulai. Keluhan/keputusan lengkap ada di session note lokal31Oktober, bukan transkrip yang dimasukkan Git.

@@ -21,22 +21,37 @@ final class Verifier {
         }
         $style = $archive->getFromName('falcon-theme/style.css');
         $archive->close();
-        if (!$valid || $size > 20*1024*1024 || !isset($seen['falcon-theme/index.php']) || !is_string($style) || !preg_match('/^Version:\s*(.+)$/m', $style, $v) || trim($v[1]) !== $manifest['theme']['version']) { return new \WP_Error('FWF_PACKAGE', 'Isi/path/versi bundle FT tidak valid.'); }
+        if (!$valid || $size > 20*1024*1024 || !isset($seen['falcon-theme/index.php']) || !is_string($style) || !preg_match('/^Version:[ \t]*(.+)$/m', $style, $v) || trim($v[1]) !== $manifest['theme']['version']) { return new \WP_Error('FWF_PACKAGE', 'Isi/path/versi bundle FT tidak valid.'); }
         return $manifest['theme']+['expanded_bytes'=>$size];
     }
     public static function remote(string $path,array $package): true|\WP_Error {
-        if(!is_file($path) || filesize($path)>20*1024*1024 || !hash_equals($package['sha256'],hash_file('sha256',$path)) || !class_exists('ZipArchive')){return new \WP_Error('FWF_PACKAGE','Paket corrupt atau ZIP tidak didukung.');}
+        $project=$package['type']==='theme' && isset($package['parent']);
+        $contract=$project?json_decode((string)@file_get_contents(dirname(__DIR__,2).'/resources/project-runtime.json'),true):null;
+        if($project && (!is_array($contract) || ($contract['schema']??null)!==1)){return new \WP_Error('FWF_PACKAGE','Kontrak runtime proyek tidak tersedia. Gunakan installer Falcon lengkap.');}
+        $archiveLimit=$project?$contract['max_archive_bytes']:20*1024*1024;
+        $expandedLimit=$project?$contract['max_expanded_bytes']:40*1024*1024;
+        if(!is_file($path)){return new \WP_Error('FWF_PACKAGE','File ZIP tidak tersedia. Ulangi pemeriksaan dan pengunduhan paket.');}
+        if(filesize($path)>$archiveLimit){return new \WP_Error('FWF_PACKAGE','Ukuran ZIP melebihi batas paket yang didukung. Build ulang dengan aset yang lebih kecil.');}
+        if(!hash_equals($package['sha256'],hash_file('sha256',$path))){return new \WP_Error('FWF_PACKAGE','Checksum ZIP tidak cocok dengan manifest. Paket belum dipasang; periksa kembali rilis sumber.');}
+        if(!class_exists('ZipArchive')){return new \WP_Error('FWF_ENV','Extension PHP ZIP diperlukan untuk memeriksa paket.');}
         $zip=new \ZipArchive();if($zip->open($path)!==true){return new \WP_Error('FWF_PACKAGE','ZIP tidak valid.');}
         try {
             $seen=[];$total=0;$root=$package['id'].'/';
             for($i=0;$i<$zip->numFiles;$i++){
                 $stat=$zip->statIndex($i);$name=$stat['name'];$total+=$stat['size'];$os=0;$attr=0;$zip->getExternalAttributesIndex($i,$os,$attr);
-                if(!str_starts_with($name,$root) || str_contains($name,'..') || str_contains($name,'\\') || str_contains($name,"\0") || array_intersect(explode('/',rtrim($name,'/')),['','.']) || isset($seen[$name]) || (($attr>>16)&0170000)===0120000 || $total>40*1024*1024){return new \WP_Error('FWF_PACKAGE','ZIP path/ukuran tidak aman.');}$seen[$name]=true;
+                if(!str_starts_with($name,$root) || str_contains($name,'..') || str_contains($name,'\\') || str_contains($name,"\0") || array_intersect(explode('/',rtrim($name,'/')),['','.']) || isset($seen[$name]) || (($attr>>16)&0170000)===0120000 || $total>$expandedLimit){return new \WP_Error('FWF_PACKAGE','ZIP path/ukuran tidak aman.');}$seen[$name]=true;
+                if($project && !str_ends_with($name,'/')){
+                    $relative=substr($name,strlen($root));$extension=pathinfo($relative,PATHINFO_EXTENSION);
+                    if(!in_array($extension,array_merge($contract['text_extensions'],$contract['binary_extensions']),true)){return new \WP_Error('FWF_PACKAGE','Jenis aset atau ukuran runtime proyek tidak didukung.');}
+                }
             }
             $header=$zip->getFromName($root.($package['type']==='plugin'?'falcon-wf.php':'style.css'));
-            if(!is_string($header) || !preg_match('/^[ *]*Version:\s*(.+)$/m',$header,$match) || trim($match[1])!==$package['version']){return new \WP_Error('FWF_PACKAGE','Versi header tidak cocok.');}
-            if($package['type']==='theme' && !isset($seen[$root.'index.php'])){return new \WP_Error('FWF_PACKAGE','Theme tanpa entrypoint.');}
-            if (isset($package['parent']) && (!preg_match('/^[ *]*Template:\s*(.+)$/m',$header,$parent) || trim($parent[1])!==$package['parent'])) { return new \WP_Error('FWF_PACKAGE','Parent header tidak cocok dengan manifest.'); }
+            if(!is_string($header) || !preg_match('/^[ *]*Version:[ \t]*(.+)$/m',$header,$match) || trim($match[1])!==$package['version']){return new \WP_Error('FWF_PACKAGE','Versi header tidak cocok.');}
+            if($project && (!preg_match('/^[ *]*Theme Name:[ \t]*(.+)$/m',$header,$name) || trim($name[1])==='')){return new \WP_Error('FWF_PACKAGE','Theme Name pada header proyek wajib tersedia.');}
+            if($package['type']==='theme'){
+                foreach($project?$contract['required_files']:['index.php'] as $required){if(!isset($seen[$root.$required])){return new \WP_Error('FWF_PACKAGE','Paket theme tidak lengkap: '.$required.' wajib tersedia. Build ulang paket proyek.');}}
+            }
+            if (isset($package['parent']) && (!preg_match('/^[ *]*Template:[ \t]*(.+)$/m',$header,$parent) || trim($parent[1])!==$package['parent'])) { return new \WP_Error('FWF_PACKAGE','Parent header tidak cocok dengan manifest.'); }
             return true;
         } finally {$zip->close();}
     }

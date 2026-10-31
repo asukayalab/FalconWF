@@ -331,3 +331,12 @@ Scope and limits: validation refusal now precedes native writes for supported fo
 - No commit/push/publish/deploy. Core alpha.19 and handbook0.1-draft.2 are local review artifacts.
 
 Cleanup final baca-saja: owned HTTP Pages0, fixture users0, per-page locks0, template fixture files0.
+
+## Kelompok1 / paket proyek alpha.20 — 31 Oktober 2026
+
+- npm run verify exit0:54 mapped paths,58/58tests. New asset contract tests cover missing index, byte-exact binary font/image, JS placeholder, unmapped asset, unsupported extension, path alias, symlink and expanded40MiB refusal.
+- Focused tests/project-contract.test.mjs exit0: actual Node builder output consumed by PHP Verifier,9checks including missing index/unsupported file/alias/symlink/parent/version/checksum rejection. This verifies packaging parity, not clean remote provenance acceptance.
+- Focused project-update.test.mjs exit0:46checks plus failed-install1/retry1. Actual WordPress install preserves standalone JS/binary font; check does not download ZIP; rendered review copy accurately separates check/Apply; dirty/commit/schema/identity/version error messages distinguished. GitHub transport fixture, not hosted distribution acceptance.
+- Full npm run test:integration exit0, PHP syntax56/installed FP+FT runtime60 hashes match build. Backup/recovery/media/schedule/retention/jobs/project installer/MCP23/OAuth59/admin128/frontend10/project44 passed. Site settings restored/verified, worker restarted. Existing WordPress.org local connectivity warnings did not fail the suite.
+- Logs ignored local/artifacts/project-package-alpha20-{verify,contract,project-update,integration}.log. Contract output/source temporary fixtures cleaned; project fixture cleanup verified after request shutdown.
+- Guides/handbook draft.3 updated. Core ZIP alpha.20 is local dirty-provenance review artifact; no commit/push/publish, no hosting/active-theme change. Groups2–6 not started.

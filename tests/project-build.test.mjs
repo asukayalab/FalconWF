@@ -31,3 +31,26 @@ test('external project uses its own identity/provenance and refuses unsafe paths
   assert.notEqual(run().status,0,'Directory symlink must be rejected');
  } finally {rmSync(temp,{recursive:true,force:true});}
 });
+
+test('project contract requires entrypoints and preserves binary assets exactly',()=>{
+ const temp=mkdtempSync(path.join(tmpdir(),'fwf-assets-'));
+ try{
+  const source=path.join(temp,'source'),output=path.join(temp,'output');cpSync('examples/projects/falcon-reference',source,{recursive:true});
+  const spec=JSON.parse(readFileSync(path.join(source,'project.json')));spec.project_id='asset-trial';spec.package.id='asset-trial';
+  const save=()=>writeFileSync(path.join(source,'project.json'),JSON.stringify(spec));
+  const run=()=>spawnSync(process.execPath,['scripts/build-project.mjs','--source',source,'--output',output],{encoding:'utf8'});
+  spec.runtime=spec.runtime.filter(x=>x!=='index.php');rmSync(path.join(source,'index.php'));save();let r=run();assert.notEqual(r.status,0);assert.match(r.stderr,/requires index.php/);
+  writeFileSync(path.join(source,'index.php'),'<?php // Entry point');spec.runtime.push('index.php');
+  const binary=Buffer.from([0,255,128,254,65,0,1,2,3]);
+  writeFileSync(path.join(source,'assets/font.woff2'),binary);writeFileSync(path.join(source,'assets/picture.png'),binary);
+  writeFileSync(path.join(source,'assets/motion.js'),'console.log("@@PROJECT_VERSION@@");');
+  spec.runtime.push('assets/font.woff2','assets/picture.png','assets/motion.js');save();r=run();assert.equal(r.status,0,r.stderr);
+  const manifest=JSON.parse(readFileSync(path.join(output,'project-manifest.json')));
+  const check=spawnSync('python3',['-c',`from zipfile import ZipFile\nimport sys\nwith ZipFile(sys.argv[1]) as z:\n assert z.read('asset-trial/assets/font.woff2')==bytes([0,255,128,254,65,0,1,2,3])\n assert z.read('asset-trial/assets/picture.png')==bytes([0,255,128,254,65,0,1,2,3])\n assert b'@@PROJECT_' not in z.read('asset-trial/assets/motion.js')\n`,path.join(output,manifest.packages[0].artifact)],{encoding:'utf8'});assert.equal(check.status,0,check.stderr);
+  writeFileSync(path.join(source,'assets/font.woff2'),Buffer.alloc(40*1024*1024));r=run();assert.notEqual(r.status,0);assert.match(r.stderr,/expanded ZIP limit/);writeFileSync(path.join(source,'assets/font.woff2'),binary);
+  spec.runtime=spec.runtime.filter(x=>x!=='assets/motion.js');save();assert.notEqual(run().status,0,'unmapped JS must fail');
+  spec.runtime.push('assets/motion.js','assets/config.env');writeFileSync(path.join(source,'assets/config.env'),'not a runtime asset');save();assert.notEqual(run().status,0,'unsupported extension refused');
+  spec.runtime=spec.runtime.filter(x=>x!=='assets/config.env');spec.runtime.push('assets//motion.js');save();assert.notEqual(run().status,0,'canonical alias refused');
+  spec.runtime=spec.runtime.filter(x=>x!=='assets//motion.js');rmSync(path.join(source,'assets/font.woff2'));symlinkSync(path.join(source,'assets/picture.png'),path.join(source,'assets/font.woff2'));save();assert.notEqual(run().status,0,'asset symlink refused');
+ }finally{rmSync(temp,{recursive:true,force:true});}
+});

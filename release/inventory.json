@@ -369,5 +369,12 @@
     "path": "src/Admin/PageDesign.php",
     "loaded_by": "Dashboard pages render/action",
     "proof": "tests/page-design.php; tests/admin.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/resources/project-runtime.json",
+    "package": "plugin",
+    "path": "resources/project-runtime.json",
+    "loaded_by": "scripts/build-project.mjs / Packages/Verifier::remote child theme",
+    "proof": "tests/project-build.test.mjs; tests/project-update.php; tests/build.test.mjs"
   }
 ]

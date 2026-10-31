@@ -200,3 +200,10 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Template harus terdaftar untuk Page pada theme aktif dan file ditemukan; default explicit didukung. Template hilang ditampilkan disabled, tidak diganti otomatis. front-page.php tetap mengikuti native hierarchy.
 - Human capability system + edit_post, nonce, revisi content/status/template/theme/catalog, edit-lock dan lease per Page. Compare previous native metadata saat update; tidak menjanjikan transaksi universal terhadap editor/plugin/theme writer pihak ketiga atau external filesystem changes.
 - UI memakai pagination20; draft preview mengikuti WordPress. Registry peran, auto-create Page, batch apply, field import dan MCP discovery ditunda.
+
+## Alpha.20 — konsistensi paket proyek
+
+- Satu JSON contract di resources/project-runtime.json dikonsumsi Node builder dan PHP shared verifier untuk child-theme project. Batas core FP/FT tetap existing; project extension rules tidak diterapkan ke ZIP plugin/bundle core.
+- Mempertahankan syarat index.php installer dan mewajibkannya sejak build. Style/header dan allowlist/size diperiksa sebelum artefak dapat dinyatakan berhasil. Binary assets disalin byte-exact; hanya teks memproses placeholder versi.
+- Error validasi dipecah tanpa melonggarkan dirty/source_commit/identity/channel/compatibility guard. Metadata check tidak menyatakan checksum ZIP telah lulus; Apply mengunduh/memeriksa sebelum mengganti file.
+- Tidak mengubah release proyek milik klien, tidak overwrite release published, tidak deploy/activate theme. Kelompok1 tidak mencakup backup, blueprint atau discovery/otomatisasi rilis proyek kelompok4.

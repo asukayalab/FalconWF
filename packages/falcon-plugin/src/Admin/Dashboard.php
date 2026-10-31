@@ -147,7 +147,7 @@ final class Dashboard {
         $this->start('check_project','updates');$this->end('Periksa paket proyek');
         $candidate=get_option('fwf_project_candidate',[]);$p=$candidate['manifest']['packages'][0]??null;
         if (is_array($p) && ($candidate['connection']??null)===$connection) {
-            echo '<p>Target: '.esc_html($p['id'].' → '.$p['version']).'. Checksum, identitas dan kompatibilitas FP/FT telah diperiksa; diperiksa ulang saat apply.</p>';
+            echo '<p>Target: '.esc_html($p['id'].' → '.$p['version']).'. Manifest, identitas, kompatibilitas FP/FT dan keberadaan asset rilis telah diperiksa. ZIP diunduh, lalu checksum dan isinya diverifikasi saat Apply sebelum pemasangan.</p>';
             $this->start('apply_project','updates');echo '<p><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia, paket telah diuji pada staging, dan saya memilih memasang/memperbarui file desain ini.</label></p>';$this->end($theme->exists()?'Perbarui desain proyek':'Pasang desain proyek');
         }
         if ($theme->exists()) { echo '<p><a href="'.esc_url(admin_url('themes.php?theme='.rawurlencode($connection['theme_id']))).'">Lihat theme / Live Preview</a>. Pilih aktivasi melalui Appearance → Themes sebagai aksi manusia terpisah.</p>'; }
