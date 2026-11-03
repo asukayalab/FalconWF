@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build lokal produk/FP: 0.1.0-alpha.23; FT: 0.1.0-alpha.7. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.24; FT: 0.1.0-alpha.7. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan dua belas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -81,3 +81,5 @@ Alpha.21 lokal: aktivasi/aksi backup menyiapkan private storage otomatis, termas
 Setup deklaratif tersedia lokal di Halaman & Desain: review, mapping Page existing atau draft baru, pilihan struktur lama/baru, field group scoped Page, type/taxonomy/term dan mode SEO supported. Konten, URL dan nilai existing dipertahankan. State parsial dapat direview ulang untuk retry tanpa duplikat. Contract: PROJECT-BLUEPRINT.md. Backup ditahan sesuai permintaan pengguna; baseline alpha.21 tidak dikembangkan selain memasukkan state blueprint dan field contracts ke cakupan settings. Belum commit/push/deploy atau acceptance hosting.
 
 Alpha.23 menambahkan discovery identitas proyek, kanal proyek otomatis dan tag manual core/proyek; cek metadata twicedaily WP-Cron/notifikasi admin terpisah dari kandidat review manusia. Kit automation proyek memakai builder dan publisher existing di repo desain terpisah. Kontrak di DISTRIBUTION.md; bukti lokal dan GitHub nyata dicatat terpisah di EVIDENCE.md. Backup tetap HOLD.
+
+Alpha.24 memperbaiki kanal core/proyek di semua environment: stable tertinggi, tertinggi termasuk stable/alpha/beta/rc, atau pin tag tertentu. Kolom tag mengikuti pilihan manual. Koneksi repo prerelease-only dibuktikan melalui form HTTP pada server lokal berkonfigurasi production dengan GitHub publik nyata; ini bukan deployment/acceptance hosting.

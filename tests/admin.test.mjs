@@ -53,7 +53,7 @@ try{
  designResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({...resetDesign,reset_design:'yes'})});
  ok(designResult.status===302 && !(await (await fetch(base+'/',{headers:{Connection:'close'}})).text()).includes('--fwf-ink:#123456;'),'reset design button removes frontend overrides');
  const connections=await admin('/wp-admin/admin.php?page=falcon-wf-connections');
- ok(connections.body.includes('name="update_channel"') && !connections.body.includes('name="release_tag"') && connections.body.includes('Stabil —') && connections.body.includes('Uji coba —'),'client chooses channel without typing a version');
+ ok(connections.body.includes('name="update_channel"') && !connections.body.includes('name="release_tag"') && connections.body.includes('Stabil terbaru') && connections.body.includes('Terbaru, termasuk uji coba') && connections.body.includes('Tag release tertentu'),'client chooses channel without typing a version');
  const repoNonce=connections.body.match(/name="_wpnonce" value="([^"]+)"/)?.[1];
  let connectionResult=await admin('/wp-admin/admin-post.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({action:'fwf_action',operation:'save_repo',screen:'connections',repo:'https://github.com/fixture/falcon-wf.git',update_channel:'testing',_wpnonce:repoNonce})});
  const pinned=await admin('/wp-admin/admin.php?page=falcon-wf-connections');

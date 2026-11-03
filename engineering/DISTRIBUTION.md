@@ -1,10 +1,10 @@
-# Distribusi dan pembaruan — alpha.23
+# Distribusi dan pembaruan — alpha.24
 
 ## Owner dan alur
 
 UpdateManager owns core source/channel/manual tag, manifest validation and reviewed candidate. ProjectManager owns the separate project connection, identity discovery, channel and reviewed project candidate. GitHubClient owns normalized transport/release discovery; shared Verifier and native WordPress upgraders remain the only installation path. Versions remain in release/components.json and each project's project.json.
 
-Core and projects offer stable/latest, testing/latest prerelease (local/staging only) and an optional explicit stable/prerelease tag. Existing project connections without channel retain their explicit tag behavior. A new project connection may leave project/theme IDs blank: save retrieves release metadata, resolves identity and validates the complete project contract before persistence. Explicit supplied IDs constrain discovery. Subsequent checks never silently change identity. Saving a connection invalidates its reviewed candidate and observations.
+Core and projects offer highest published stable, highest published release including stable/alpha/beta/rc, and an optional explicit stable/prerelease tag in every environment. Both automatic selections scan the bounded complete release list and compare versions, rather than relying on GitHub latest or publication ordering. Existing project connections without channel retain their explicit tag behavior. A new project connection may leave project/theme IDs blank: save retrieves release metadata, resolves identity and validates the complete project contract before persistence. Explicit supplied IDs constrain discovery. Subsequent checks never silently change identity. Saving a connection invalidates its reviewed candidate and observations.
 
 Human check stores the concrete release, source/selection and checked_at. Apply rediscovers and compares the reviewed identity/tag/package; a newly published release requires fresh human check. Same/older versions are rejected. Project UI hides same/older Apply. ZIP checksum/content verification happens after download at Apply, before file replacement. No content/schema import, theme switch, homepage change or automatic installation is added.
 
@@ -23,3 +23,7 @@ A main push checks out the exact SHA, builds through the existing project builde
 The publish job alone has contents:write using GitHub's scoped built-in token. It revalidates project identity/version/compatibility, clean tracked source/expected SHA, notes and ZIP checksum. The shared release publisher creates/verifies a draft, exact commit tag and exact assets/digests before publishing. Existing published releases are untouched; existing drafts/tag collisions/incomplete uploads require operator review. Automatic stable publication stays blocked until release gates are accepted. No WordPress credential/deploy/activation step exists.
 
 Local script tests are separate from real GitHub Actions/distribution evidence in EVIDENCE.md. Source/tooling can be reviewed independently; no client data, DB/uploads, credential, docs or session-notes belong in runtime ZIPs. Backup remains HOLD.
+
+## UI dan koreksi alpha.24
+
+Pilihan core/proyek selalu tersedia: Stabil terbaru; Terbaru, termasuk uji coba; Tag release tertentu. Internal stable/testing/manual values dipertahankan untuk kompatibilitas. Kolom tag ditampilkan, diaktifkan dan diwajibkan hanya untuk manual; beralih pilihan tidak menghapus nilai input. Pin tersimpan tetap memilih tag yang sama hingga pengelola menggantinya. Batas environment untuk pemilihan prerelease dihapus sesuai keputusan pengguna 3 November 2026; izin/nonce, reviewed candidate, clean provenance, compatibility, checksum dan no-downgrade tetap berlaku. Publikasi stable otomatis tetap terpisah dan masih diblokir.

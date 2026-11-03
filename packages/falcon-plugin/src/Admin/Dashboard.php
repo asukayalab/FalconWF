@@ -25,6 +25,7 @@ final class Dashboard {
         add_action('admin_post_fwf_action',[$this,'action']);
         add_action('admin_enqueue_scripts',function ($hook) {
             if (!str_contains($hook,'falcon-wf')) { return; }
+            if(str_contains($hook,'falcon-wf-connections')){wp_enqueue_script('fwf-release-choice',plugins_url('assets/release-choice.js',$this->file),[],(string)filemtime(dirname($this->file).'/assets/release-choice.js'),true);}
             $manifest=json_decode((string)@file_get_contents(dirname($this->file).'/assets/manifest.json'),true);
             if (str_contains($hook,'falcon-wf-backup')) { wp_enqueue_media();wp_enqueue_script('fwf-backup',plugins_url('assets/backup.js',$this->file),['media-views'],(string)filemtime(dirname($this->file).'/assets/backup.js'),true); }
             if (isset($manifest['admin.css']) && is_file(dirname($this->file).'/assets/'.$manifest['admin.css'])) {
@@ -87,19 +88,16 @@ final class Dashboard {
             case 'connections':
                 echo '<h2>Pembaruan Falcon WF</h2><p>Atur sekali. Falcon WF akan mencari versi terbaru sesuai pilihan di bawah; Anda tidak perlu mengetahui nomor versinya.</p>';
                 $this->start('save_repo',$page);
-                $channel=\FalconWF\Updates\UpdateManager::channel();
-                echo '<p><label for="fwf-update-channel">Versi yang ingin diterima</label><br><select id="fwf-update-channel" name="update_channel"><option value="stable" '.selected($channel,'stable',false).'>Stabil — disarankan untuk website klien</option>';
-                if (in_array(wp_get_environment_type(),['local','staging'],true)) { echo '<option value="testing" '.selected($channel,'testing',false).'>Uji coba — untuk website trial</option>'; }
-                echo '<option value="manual" '.selected($channel,'manual',false).'>Tag manual — pengelola</option></select></p><p>Stabil menerima versi resmi. Uji coba menerima versi pengembangan terbaru dan hanya tersedia pada situs trial.</p><details><summary>Pengaturan sumber pembaruan (untuk pengelola)</summary>';
+                $this->releaseChoice('update_channel','update_tag',\FalconWF\Updates\UpdateManager::channel(),(string)get_option('fwf_update_tag',''));
+                echo '<details><summary>Pengaturan sumber pembaruan (untuk pengelola)</summary>';
                 $this->text('repo','Alamat GitHub sumber pembaruan',\FalconWF\Updates\UpdateManager::repo());
-                $this->text('update_tag','Tag rilis (hanya jalur manual)',get_option('fwf_update_tag',''),'text',false);
                 echo '<p>Sumber bawaan Falcon WF sudah terisi. Repo publik tidak membutuhkan token.</p></details>';
                 $this->end('Simpan pengaturan pembaruan');
                 echo '<p><a class="button button-primary" href="'.esc_url(admin_url('admin.php?page=falcon-wf-updates')).'">Buka Pembaruan</a></p><details><summary>Koneksi desain website (untuk pengelola)</summary>'; $this->projectConnection();echo '</details>'; break;
             case 'updates':
                 \FalconWF\Updates\Monitor::render();
                 $this->start('check_updates',$page); $this->end('Periksa pembaruan');
-                echo '<p>Versi yang diterima: <strong>'.esc_html(\FalconWF\Updates\UpdateManager::channel()==='manual'?'Tag manual '.get_option('fwf_update_tag',''):(\FalconWF\Updates\UpdateManager::channel()==='testing'?'Uji coba terbaru':'Stabil terbaru')).'</strong>. Sumber dan jalur diatur melalui Proyek &amp; Koneksi.</p>';
+                echo '<p>Versi yang diterima: <strong>'.esc_html(\FalconWF\Updates\UpdateManager::channel()==='manual'?'Tag release tertentu: '.get_option('fwf_update_tag',''):(\FalconWF\Updates\UpdateManager::channel()==='testing'?'Terbaru, termasuk uji coba':'Stabil terbaru')).'</strong>. Sumber dan jalur diatur melalui Proyek &amp; Koneksi.</p>';
                 $candidate=get_option('fwf_release_candidate',[]);
                 foreach (['falcon-wf'=>'Falcon Plugin','falcon-theme'=>'Falcon Theme'] as $id=>$label) {
                     $installed=\FalconWF\Updates\UpdateManager::installedVersion($id);
@@ -129,15 +127,21 @@ final class Dashboard {
         }
         echo '</div>';
     }
+    private function releaseChoice(string $name,string $tagName,string $channel,string $tag): void {
+        echo '<fieldset data-fwf-release-choice><p><label for="fwf-'.esc_attr($name).'">Release yang diterima</label><br><select id="fwf-'.esc_attr($name).'" name="'.esc_attr($name).'" data-fwf-release-channel>';
+        foreach(['stable'=>'Stabil terbaru','testing'=>'Terbaru, termasuk uji coba','manual'=>'Tag release tertentu'] as $value=>$label){echo '<option value="'.esc_attr($value).'" '.selected($channel,$value,false).'>'.esc_html($label).'</option>';}
+        echo '</select></p><div data-fwf-release-tag>';
+        $this->text($tagName,'Tag release',$tag,'text',$channel==='manual');
+        echo '</div><p>Stabil terbaru memilih versi stabil tertinggi. Terbaru, termasuk uji coba memilih versi tertinggi dari seluruh release yang sudah diterbitkan. Tag release tertentu tetap terkunci sampai Anda menggantinya.</p></fieldset>';
+    }
     private function projectConnection(): void {
         $connection=ProjectManager::connection();echo '<section class="fwf-panel"><h2>Paket desain proyek</h2><p>Satu child theme per koneksi situs. Repo menyimpan desain/template; konten dan pengaturan desain tetap di situs. Pemasangan tidak mengaktifkan theme.</p>';
         $this->start('save_project','connections');
         $this->text('project_repo','Repo desain klien (URL GitHub atau owner/name)',$connection['repo']??'');
-        $channel=$connection['channel']??(!empty($connection['tag'])?'manual':'stable');echo '<p><label>Versi desain yang diterima <select name="project_channel">';foreach(['stable'=>'Stabil terbaru','testing'=>'Uji coba terbaru','manual'=>'Tag manual — pengelola'] as $value=>$label){if($value==='testing' && !in_array(wp_get_environment_type(),['local','staging'],true)){continue;}echo '<option value="'.esc_attr($value).'" '.selected($channel,$value,false).'>'.esc_html($label).'</option>';}echo '</select></label></p>';
-        echo '<p>Identitas desain ditemukan dari rilis jika belum diisi. Pengaturan berikut bersifat opsional untuk pengelola.</p><details><summary>Identitas dan tag manual</summary>';
-        $this->text('project_id','Project ID (kosong: temukan dari rilis)',$connection['project_id']??'','text',false);
-        $this->text('theme_id','Slug theme (kosong: temukan dari rilis)',$connection['theme_id']??'','text',false);
-        $this->text('project_tag','Tag rilis (hanya jalur manual)',$connection['tag']??'','text',false);
+        $this->releaseChoice('project_channel','project_tag',$connection['channel']??(!empty($connection['tag'])?'manual':'stable'),$connection['tag']??'');
+        echo '<p>Identitas desain ditemukan dari release jika belum diisi.</p><details><summary>Batas identitas desain (opsional untuk pengelola)</summary>';
+        $this->text('project_id','Project ID (kosong: temukan dari release)',$connection['project_id']??'','text',false);
+        $this->text('theme_id','Slug theme (kosong: temukan dari release)',$connection['theme_id']??'','text',false);
         echo '</details><p>Repo desain publik tidak membutuhkan token. Repo private memerlukan credential read-only FWF_PROJECT_GITHUB_TOKEN pada server. Release proyek berisi project-manifest.json dan ZIP child theme dari commit bersih.</p>';
         $this->end('Simpan koneksi proyek');
         if ($connection) { $this->start('disconnect_project','connections');echo '<p>Putus koneksi mempertahankan file theme, konten dan pengaturan desain.</p>';$this->end('Putus koneksi proyek'); }

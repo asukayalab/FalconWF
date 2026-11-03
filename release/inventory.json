@@ -397,5 +397,12 @@
     "path": "src/Updates/Monitor.php",
     "loaded_by": "Bootstrap WP-Cron / admin notices; Lifecycle unschedule",
     "proof": "tests/distribution.php; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/assets/release-choice.js",
+    "package": "plugin",
+    "path": "assets/release-choice.js",
+    "loaded_by": "Dashboard connections admin_enqueue_scripts",
+    "proof": "tests/release-choice.test.mjs; tests/distribution.php; tests/admin.test.mjs"
   }
 ]

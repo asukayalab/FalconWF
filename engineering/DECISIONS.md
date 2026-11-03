@@ -222,3 +222,7 @@ Satu JSON Schema untuk builder dan validasi runtime. Definitions tetap pemilik s
 ## 3 November 2026 — distribusi alpha.23
 
 UpdateManager/ProjectManager tetap pemilik koneksi/manifest/review/install. Monitor hanya observasi metadata, tidak memberi approval atau memasang kode. Kanal stable/testing/manual, identity dari manifest saat setup, tag/project identity existing tetap terikat. Automation proyek diekspor sebagai tooling yang ikut commit proyek; builder/publisher existing dipakai bersama, tidak membuat akun/distribusi/deployment service kedua. Stable otomatis tetap diblokir. Kontrak DISTRIBUTION.md; backup HOLD.
+
+## 3 November 2026 — koreksi kanal alpha.24 (menggantikan batas selection sebelumnya)
+
+Sesuai keputusan pengguna: Stabil terbaru memilih stable semver tertinggi; Terbaru, termasuk uji coba memilih semver tertinggi dari seluruh release published stabil/alpha/beta/rc; Tag release tertentu menampilkan kolom dan mengunci tag. Ketiganya tersedia pada semua environment, termasuk production. GitHubClient menjadi owner bounded list/version selection untuk kedua kanal otomatis. Tidak memakai urutan/tanda latest GitHub sebagai proxy versi tertinggi. Guard izin/review/manifest/ZIP tidak dilonggarkan, instalasi tetap manusia. Batas restore backup tidak berubah dan backup HOLD.

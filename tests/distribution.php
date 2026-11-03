@@ -13,7 +13,7 @@ $projectPackage=['id'=>'falcon-discovery-fixture','type'=>'theme','parent'=>'fal
 $mock=static function($pre,$args,$url)use(&$version,&$fail,&$downloads,&$calls,$corePackage,$projectPackage){
  $calls[]=$url;if($fail){return new WP_Error('fixture','Network unavailable');}
  $project=str_contains($url,'/fixture/project/');$body=[];
- if(str_contains($url,'/releases?')){$body=[['draft'=>false,'prerelease'=>true,'tag_name'=>'v'.$version],['draft'=>false,'prerelease'=>true,'tag_name'=>'v0.1.0-alpha.9']];}
+ if(str_contains($url,'/releases?')){$body=[['draft'=>false,'prerelease'=>str_contains($version,'-'),'tag_name'=>'v'.$version],['draft'=>false,'prerelease'=>true,'tag_name'=>'v0.1.0-alpha.9']];}
  elseif(str_contains($url,'/releases/tags/') || str_ends_with($url,'/releases/latest')){$body=['draft'=>false,'prerelease'=>str_contains($version,'-'),'tag_name'=>'v'.$version,'assets'=>[['name'=>$project?'project-manifest.json':'release-manifest.json','id'=>1],['name'=>($project?'falcon-discovery-fixture':'falcon-wf').'-'.$version.'.zip','id'=>2]]];}
  elseif(str_ends_with($url,'/assets/1')){$p=$project?$projectPackage:$corePackage;$p['version']=$version;$p['artifact']=$p['id'].'-'.$version.'.zip';$body=['schema'=>1,'version'=>$version,'status'=>str_contains($version,'-')?'development':'stable','dirty'=>false,'source_commit'=>str_repeat('c',40),'packages'=>[$p]];if($project){$body['project_id']='discovery-project';}}
  else{$downloads++;return new WP_Error('fixture','Unexpected ZIP or external request');}
@@ -38,7 +38,9 @@ try{
  $ok(U::saveConnection('fixture/core','manual','v0.1.0-alpha.91')===true && U::selection()==='v0.1.0-alpha.91','core manual pin');
  $ok(P::save([...$connection,'channel'=>'manual','tag'=>'v0.1.0-alpha.91'])===true && !is_wp_error($p->check()),'project manual pin');
  $ok(!is_wp_error($u->check()),'core pinned prerelease discovery');
- $version='0.1.1';$ok(U::saveConnection('fixture/core','manual','v0.1.1')===true && !is_wp_error($u->check()),'core stable manual tag supported');
+ $version='0.1.1';$ok(U::saveConnection('fixture/core','testing')===true && !is_wp_error($u->check()),'core including-prerelease channel accepts a winning stable release');
+ $ok(P::save([...$connection,'channel'=>'testing','tag'=>''])===true && !is_wp_error($p->check()),'project including-prerelease channel accepts a winning stable release');
+ $ok(U::saveConnection('fixture/core','manual','v0.1.1')===true && !is_wp_error($u->check()),'core stable manual tag supported');
  $ok(P::save([...$connection,'channel'=>'manual','tag'=>'v0.1.1'])===true && !is_wp_error($p->check()),'project stable manual tag supported');
  $ok(is_wp_error(U::saveConnection('fixture/core','manual','*')) && is_wp_error(P::save([...$connection,'channel'=>'manual','tag'=>'*'])),'manual tags cannot use automatic wildcard');
  $ok(is_wp_error(U::saveConnection('fixture/core','manual','')) && is_wp_error(U::saveConnection('fixture/core','manual','../bad')),'invalid manual core tags denied');

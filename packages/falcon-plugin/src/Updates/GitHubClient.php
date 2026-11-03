@@ -47,7 +47,7 @@ final class GitHubClient {
         if ($status!==200) { if(isset($tmp)){wp_delete_file($tmp);} return new \WP_Error('FWF_UPSTREAM','Asset API tidak menghasilkan alur download yang didukung.'); }
         return $stream?$tmp:wp_remote_retrieve_body($response);
     }
-    private function latestPrerelease(): string|\WP_Error {
+    private function latestVersion(bool $includePrerelease): string|\WP_Error {
         $best='';$version='';
         for ($page=1;$page<=10;$page++) {
             $r=$this->request('https://api.github.com/repos/'.$this->repo.'/releases?per_page=100&page='.$page,[
@@ -57,18 +57,18 @@ final class GitHubClient {
             $items=json_decode(wp_remote_retrieve_body($r),true);
             if (!is_array($items) || !array_is_list($items)) { return new \WP_Error('FWF_PACKAGE','Daftar pembaruan tidak valid.'); }
             foreach ($items as $item) {
-                if (!is_array($item) || ($item['draft']??null)!==false || ($item['prerelease']??null)!==true || !is_string($item['tag_name']??null) || !preg_match('/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D',$item['tag_name'])) { continue; }
+                if (!is_array($item) || ($item['draft']??null)!==false || !is_bool($item['prerelease']??null) || (!$includePrerelease && $item['prerelease']) || !is_string($item['tag_name']??null) || !preg_match($item['prerelease']?'/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D':'/^v?\d+\.\d+\.\d+$/D',$item['tag_name'])) { continue; }
                 $next=preg_replace('/^v/','',$item['tag_name']);
                 if ($best==='' || version_compare($next,$version,'>')) { $best=$item['tag_name'];$version=$next; }
             }
-            if (count($items)<100) { return $best?:new \WP_Error('FWF_UPSTREAM','Belum ada versi uji coba yang diterbitkan.'); }
+            if (count($items)<100) { return $best?:new \WP_Error('FWF_UPSTREAM','Belum ada release yang sesuai pilihan dan sudah diterbitkan.'); }
         }
         return new \WP_Error('FWF_UPSTREAM','Daftar release terlalu panjang untuk diperiksa sekaligus. Hubungi pengelola situs.');
     }
     public function release(string $tag=''): array|\WP_Error {
         $selection=UpdateManager::validateSelection($tag,true); if(is_wp_error($selection)){return $selection;}
         if (!self::validRepo($this->repo)) { return new \WP_Error('FWF_AUTH','Isi alamat repo GitHub yang valid terlebih dahulu.'); }
-        if ($tag==='*') { $tag=$this->latestPrerelease();if(is_wp_error($tag)){return $tag;} }
+        if ($tag==='' || $tag==='*') { $tag=$this->latestVersion($tag==='*');if(is_wp_error($tag)){return $tag;} }
         $r=$this->request('https://api.github.com/repos/'.$this->repo.($tag===''?'/releases/latest':'/releases/tags/'.rawurlencode($tag)),[
             'timeout'=>20,'redirection'=>0,'limit_response_size'=>1024*1024,
             'headers'=>['Accept'=>'application/vnd.github+json','X-GitHub-Api-Version'=>'2022-11-28','User-Agent'=>'Falcon-WF']]);

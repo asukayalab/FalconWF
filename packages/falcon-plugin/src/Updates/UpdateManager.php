@@ -5,9 +5,8 @@ use FalconWF\Packages\Lock;
 final class UpdateManager {
     public static function validateSelection(string $tag,bool $automatic=false): true|\WP_Error {
         if ($tag==='' || preg_match('/^v?\d+\.\d+\.\d+$/D',$tag)) { return true; }
-        if (!in_array(wp_get_environment_type(),['local','staging'],true)) { return new \WP_Error('FWF_PERMISSION','Prerelease hanya di environment local atau staging. Kosongkan tag untuk stable.'); }
         if ($tag==='*' && $automatic) { return true; }
-        if (!preg_match('/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D',$tag)) { return new \WP_Error('FWF_VALIDATION','Tag prerelease harus seperti v0.1.0-alpha.3.'); }
+        if (!preg_match('/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D',$tag)) { return new \WP_Error('FWF_VALIDATION','Isi tag release seperti v1.0.0 atau v1.1.0-alpha.3.'); }
         return true;
     }
     public static function validate(array $manifest, string $tag=''): array|\WP_Error {
@@ -33,7 +32,7 @@ final class UpdateManager {
     }
     public static function selection(): string|\WP_Error {
         $channel=self::channel();
-        if (!in_array($channel,['stable','testing','manual'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih jalur Stabil atau Uji coba.'); }
+        if (!in_array($channel,['stable','testing','manual'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih Stabil terbaru, Terbaru termasuk uji coba, atau Tag release tertentu.'); }
         $tag=$channel==='manual'?(string)get_option('fwf_update_tag',''):($channel==='testing'?'*':'');if($channel==='manual' && $tag===''){return new \WP_Error('FWF_VALIDATION','Isi tag untuk jalur manual.');}$valid=self::validateSelection($tag,$channel==='testing');return is_wp_error($valid)?$valid:$tag;
     }
     public static function saveConnection(mixed $repo,mixed $channel,mixed $tag=''): true|\WP_Error {
