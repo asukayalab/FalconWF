@@ -24,28 +24,28 @@ final class Schema {
             default=>[],
         };
     }
-    public static function custom(string $type): array {
+    public static function custom(string $type,?int $id=null): array {
         if (in_array($type,['fwf_publication','fwf_learning'],true)) { return self::preset($type); }
-        return Definitions::fields($type);
+        return Definitions::fields($type,$id);
     }
     public static function keysNative(): array { return array_keys(self::FIELDS); }
     public static function types(): array { return array_values(array_unique(array_merge(Definitions::types(),\FalconWF\Bootstrap::instance()?->content->types()??[]))); }
-    public static function keys(?string $type=null): array {
+    public static function keys(?string $type=null,?int $id=null): array {
         $keys=array_keys(self::FIELDS);
-        foreach ($type===null?self::types():[$type] as $t) { $keys=array_merge($keys,array_keys(self::custom($t))); }
+        foreach ($type===null?self::types():[$type] as $t) { $keys=array_merge($keys,array_keys(self::custom($t,$id))); }
         return array_values(array_unique($keys));
     }
     public static function values(int $id,string $type): array {
         $values=[];
-        foreach (self::custom($type) as $key=>$d) {
+        foreach (self::custom($type,$id) as $key=>$d) {
             $value=metadata_exists('post',$id,'_fwf_'.$key)?get_post_meta($id,'_fwf_'.$key,true):$d['default'];
             $values[$key]=in_array($d['kind'],['integer','image','relationship'],true)?(int)$value:(string)$value;
         }
         return $values;
     }
-    public static function validate(array $fields,string $type='post'): array|\WP_Error {
-        if (!$fields || array_diff(array_keys($fields),self::keys($type))) { return new \WP_Error('FWF_VALIDATION','Field tidak tersedia untuk jenis konten ini.'); }
-        $result=['post'=>[],'meta'=>[]]; $custom=self::custom($type);
+    public static function validate(array $fields,string $type='post',?int $id=null): array|\WP_Error {
+        if (!$fields || array_diff(array_keys($fields),self::keys($type,$id))) { return new \WP_Error('FWF_VALIDATION','Field tidak tersedia untuk jenis konten ini.'); }
+        $result=['post'=>[],'meta'=>[]]; $custom=self::custom($type,$id);
         foreach ($fields as $key=>$value) {
             if (isset(self::FIELDS[$key])) {
                 if (!is_string($value) || strlen($value)>32000 || ($key==='title' && strlen($value)>300)) { return new \WP_Error('FWF_VALIDATION','Nilai field terlalu panjang atau tipe tidak valid.'); }
@@ -87,7 +87,7 @@ final class Schema {
     }
     /** Non-form publishers may only use the already valid stored field contract. */
     public static function validatePublication(int $id,string $type,string $status,array $meta=[]): true|\WP_Error {
-        $definitions=self::custom($type);
+        $definitions=self::custom($type,$id);
         if (!$definitions || !in_array($status,['publish','future','private'],true)) { return true; }
         $values=self::values($id,$type);
         foreach ($meta as $key=>$value) {
@@ -100,7 +100,7 @@ final class Schema {
                 $values[$field]=$value;
             }
         }
-        $validated=self::validate($values,$type);
+        $validated=self::validate($values,$type,$id);
         return is_wp_error($validated)?$validated:true;
     }
     public static function register(): void {

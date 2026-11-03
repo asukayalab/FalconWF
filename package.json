@@ -1,6 +1,6 @@
 {
   "name": "falcon-wf",
-  "version": "0.1.0-alpha.21",
+  "version": "0.1.0-alpha.23",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,13 +8,18 @@
   },
   "scripts": {
     "build": "node scripts/build-release.mjs",
-    "verify": "node scripts/check-connections.mjs && node --test tests/build.test.mjs tests/project-build.test.mjs tests/backup-size.test.mjs tests/release-publish.test.mjs",
+    "verify": "node scripts/check-connections.mjs && node --test tests/build.test.mjs tests/project-build.test.mjs tests/backup-size.test.mjs tests/release-publish.test.mjs tests/project-automation.test.mjs",
     "local:setup": "node scripts/local.mjs setup",
     "local:up": "node scripts/local.mjs up",
     "local:down": "node scripts/local.mjs down",
     "local:install": "node scripts/local.mjs install",
     "test:integration": "node scripts/local.mjs test",
     "local:seed": "node scripts/local.mjs seed",
-    "build:project": "node scripts/build-project.mjs"
+    "build:project": "node scripts/build-project.mjs",
+    "export:project-automation": "node scripts/export-project-automation.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "semver": "^7.8.5"
   }
 }

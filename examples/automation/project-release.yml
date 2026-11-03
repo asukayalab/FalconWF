@@ -1,0 +1,55 @@
+name: Package and release website design
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: falcon-project-release
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix .falcon-tooling
+      - name: Build ZIP and manifest from project.json
+        run: node .falcon-tooling/scripts/build-project.mjs --source "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/falcon-project"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: checked-project
+          path: |
+            ${{ runner.temp }}/falcon-project/*.zip
+            ${{ runner.temp }}/falcon-project/project-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: checked-project
+          path: ${{ runner.temp }}/falcon-project
+      - name: Publish new immutable prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FWF_PROJECT_OUTPUT: ${{ runner.temp }}/falcon-project
+        run: node .falcon-tooling/scripts/publish-project.mjs

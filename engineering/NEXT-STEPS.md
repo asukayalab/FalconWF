@@ -1,5 +1,9 @@
 # Prioritas menuju Falcon WF 0.1
 
+## Posisi 1 November 2026
+
+Backup (kelompok 2) HOLD atas permintaan user. Kelompok 3 dikerjakan sebagai blueprint setup deklaratif lokal alpha.22/FT alpha.7; lihat PROJECT-BLUEPRINT.md. Berikutnya trial paket nyata dan review UX sebelum distribusi; AI environment discovery/MCP acceptance, auto-ZIP klien dan notifikasi update berkala tetap pekerjaan terpisah. Urutan historis di bawah bukan perubahan prioritas terbaru.
+
 Keputusan pengguna 8 Oktober 2026: otomatisasi rilis dan tesnya dikerjakan paralel. Trial memakai ar.obie.my.id; pilot Rizal ditunda. Backup/cloud dan pengembangan Desain Global dibekukan sementara. Referensi Oxygen dibahas kembali saat Desain Global dilanjutkan.
 
 ## 1. Distribusi core praktis
@@ -51,3 +55,9 @@ Enam kelompok disetujui: (1) konsistensi paket; (2) backup praktis dasar, cloud 
 ## Kelompok2 — alpha.21 lokal
 
 Pengguna mengotorisasi nomor2. Inti kode manual server/download, provisioning privat dan monthly selesai/lulus lokal; cloud tetap menyusul. Hosting Docker/panel telah dikonfirmasi pengguna, tetapi panel/akses/mount belum diidentifikasi. Siapkan volume privat operator dan pasang/uji build sebelum menutup hosted acceptance. Panduan guides/BACKUP-HOSTING-DOCKER.md tersedia. Jangan otomatis memulai kelompok3 atau mengklaim seluruh pekerjaan hosting selesai.
+
+## 3 November 2026 — kelompok4
+
+User mengotorisasi kelompok4 dan repo trial generik bila diperlukan. Alpha.23 mengerjakan automation paket proyek, discovery, kanal/tag manual dan cek berkala/notifikasi. Kontrak DISTRIBUTION.md; acceptance GitHub nyata hanya dicatat setelah diuji. Kelompok3 dianggap terlaksana oleh user; backup tetap HOLD. Jangan otomatis memulai kelompok5/6.
+
+Kelompok4: implementasi alpha.23 dan public GitHub trial → WordPress lokal lulus, termasuk dua workflow/rilis, install/update, discovery/notifikasi dan content preservation. Core belum commit/push/publish/deploy; private/hosting acceptance tetap terpisah. Berikutnya review hasil dengan pengguna; kelompok5/6 tidak dimulai otomatis.

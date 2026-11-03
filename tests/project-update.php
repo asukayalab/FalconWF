@@ -91,6 +91,7 @@ try {
  $zip('0.1.0','falcon-theme',$id.'/../escape.php');$manifest['packages'][0]['sha256']=hash_file('sha256',$zipPath);$manager->check();$ok(is_wp_error($manager->apply(true)) && !is_dir($root),'project traversal refused');
  $zip('0.1.0','falcon-theme',$id.'//index.php');$manifest['packages'][0]['sha256']=hash_file('sha256',$zipPath);$ok(is_wp_error(V::remote($zipPath,$manifest['packages'][0])),'canonical path aliases refused by shared verifier');
  $zip('0.1.0');$manifest['packages'][0]['sha256']=hash_file('sha256',$zipPath);$manager->check();$beforeTheme=get_stylesheet();$beforeReading=[get_option('show_on_front'),get_option('page_on_front')];
+ $contentPage=wp_insert_post(['post_type'=>'page','post_status'=>'publish','post_title'=>'Project update preservation fixture','post_content'=>'Human body must survive design updates']);update_post_meta($contentPage,'fwf_fixture_value','Human field value');$contentBefore=get_post($contentPage,ARRAY_A);$metaBefore=get_post_meta($contentPage);
  $signed=true;$result=$manager->apply(true);$signed=false;$ok($result===true,'actual WordPress fresh child theme install via signed redirect without credential forwarding');
  $ok(get_stylesheet()===$beforeTheme && [get_option('show_on_front'),get_option('page_on_front')]===$beforeReading && wp_get_theme($id)->get('Version')==='0.1.0','fresh install preserves active theme and homepage');
  $ok(file_get_contents($root.'/assets/font.woff2')==="\0\xff\x80FONT" && file_get_contents($root.'/assets/motion.js')==='window.FalconFixture=true;','actual project install preserves binary font and standalone JavaScript');
@@ -99,6 +100,7 @@ try {
  $zip('0.1.1');$manifest['version']='0.1.1';$manifest['packages'][0]=[...$package,'version'=>'0.1.1','artifact'=>$id.'-0.1.1.zip','sha256'=>hash_file('sha256',$zipPath)];$manager->check();
  // Successful update and deliberate failure are separate versions; recovery finishes at request shutdown.
  switch_theme($id);$result=$manager->apply(true);$ok($result===true && wp_get_theme($id)->get('Version')==='0.1.1' && get_stylesheet()===$id,'actual child update preserves active selection');
+ $ok(get_post($contentPage,ARRAY_A)===$contentBefore && get_post_meta($contentPage)===$metaBefore,'published Page body/status/URL and field values survive install and active-theme update');
  $duplicate=true;$ok(is_wp_error($manager->check()) && get_option('fwf_project_candidate',null)===null,'failed project check invalidates candidate');$duplicate=false;
  wp_set_current_user($editor);$ok(is_wp_error($manager->check()) && is_wp_error($manager->apply(true)) && is_wp_error(P::save($connection)),'editor denied project save/check/apply');
  wp_set_current_user(get_user_by('login','fwf-admin')->ID);
@@ -106,6 +108,7 @@ try {
  $ok(P::save($connection)===true && !is_wp_error($manager->check()),'pinned local project prerelease discovery');
  echo "Project update checks passed: $count. Mock GitHub, actual WordPress file installation/update.\n";
  } finally {
+ if(isset($contentPage)){wp_delete_post($contentPage,true);}
  remove_filter('pre_http_request',$mock,10);
  foreach($settings as $key=>$value){$value===null?delete_option($key):update_option($key,$value);}
  wp_delete_file($zipPath);

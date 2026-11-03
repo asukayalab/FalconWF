@@ -9,7 +9,7 @@ Commit menyimpan kode lokal; push mengirim kode ke GitHub. WordPress memperbarui
 3. Buka Pembaruan → Periksa pembaruan. FWF mencari versi terbaru, menampilkan versi terpasang/tersedia, waktu pemeriksaan dan catatan perubahan.
 4. Bila tersedia versi lebih baru, siapkan backup, centang konfirmasi lalu Perbarui Falcon Plugin atau Perbarui Falcon Theme. Paket diperiksa sebelum dipasang. FP dan FT diperbarui terpisah; tampilan aktif dipertahankan.
 
-Pengaturan tag lama dari alpha.15 atau sebelumnya menjadi jalur Uji coba otomatis saat dibaca oleh alpha.16. Menyimpan pengaturan baru menghapus tag lama. Release baru dapat ditemukan dengan tombol yang sama tanpa mengedit koneksi. Tidak ada pemasangan tanpa tindakan manusia.
+Pengaturan tag lama dari alpha.15 atau sebelumnya menjadi jalur Uji coba otomatis saat dibaca oleh alpha.16. Jalur otomatis tidak memakai tag lama; pengelola dapat memilih Tag manual dan mengisi tag stabil/prerelease tertentu pada alpha.23. Release baru dapat ditemukan dengan tombol yang sama tanpa mengedit koneksi. Tidak ada pemasangan tanpa tindakan manusia.
 
 Stabil membaca latest stable GitHub. Uji coba memilih versi prerelease tertinggi yang diterbitkan (alpha/beta/rc), mengabaikan draft dan stable. Pengaturan ini tidak otomatis beralih ke stable saat stable diterbitkan; pengelola memilih Stabil setelah trial selesai. Repo publik tidak membutuhkan token/server setup. Repo private tetap opsional melalui credential terbatas server; tidak ada token di form.
 
@@ -41,3 +41,11 @@ WP upgrader menangani penggantian/recovery kode sesuai WordPress. FWF tidak menj
 ## Bukti dan batas
 
 Fixture integration memanggil WP Plugin_Upgrader dan Theme_Upgrader sungguhan, tetapi metadata/download GitHub disimulasikan. Ini bukti lokal, bukan acceptance distribusi private/hosting atau rehearsal restore insiden production. Repo publik tidak membutuhkan konfigurasi credential server. Pengujian update hosting dan recovery tetap memerlukan staging HTTPS target.
+
+## Cek berkala dan tag manual — alpha.23
+
+Core dan proyek diperiksa dua kali sehari melalui WP-Cron. Notifikasi admin menautkan Pembaruan; tidak memasang otomatis. Layar Pembaruan menampilkan waktu/hasil cek berkala dan error jika sumber belum dapat dihubungi. Server cron diperlukan untuk eksekusi tepat tanpa kunjungan. Hasil lebih dari dua hari tidak dipakai untuk notifikasi.
+
+Untuk mengunci rilis tertentu, pengelola memilih Tag manual di Proyek & Koneksi lalu mengisi tag, misalnya v0.1.0-alpha.23. Prerelease tetap local/staging; tag stabil didukung di semua environment. Untuk menerima rilis berikutnya otomatis, pilih kembali Stabil atau Uji coba. Perubahan sumber/kanal mengharuskan Periksa ulang; hasil cron tidak menggantikan kandidat yang direview.
+
+Automation desain klien: guides/PROJECT-UPDATES.md. Jalur core tetap workflow existing.

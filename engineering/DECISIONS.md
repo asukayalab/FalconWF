@@ -9,7 +9,7 @@
 | Runtime | Minimum WP 6.7/PHP 8.3, single-site. Kombinasi yang benar-benar diuji: WP 7.1.2/PHP 8.3.35/MariaDB 10.11 Docker. Range lain belum disertifikasi. |
 | Persistence | Posts native, title/content/excerpt dan revisions native. Modul Projects/Publications/Learning memakai CPT. Field proyek lanjutan belum disediakan. Settings/operation/proposal di options non-autoload; audit di tabel terpisah. |
 | Loader | Autoloader namespace internal kecil tanpa dependency Composer. Tidak membuat Composer/vendor kosong. Composer dapat diperkenalkan saat ada dependency PHP nyata. |
-| Build | Node >=22 tanpa dependency npm; Python 3 stdlib untuk ZIP deterministik. CSS source → filename hashed → manifest → enqueue. Tidak membuat JS kosong. |
+| Build | Node >=22; Ajv dan semver hanya dependency development untuk validasi paket; Python 3 stdlib untuk ZIP deterministik. CSS source → filename hashed → manifest → enqueue. Tidak membuat JS kosong. |
 | Lokal | Docker Compose terisolasi, port 8091 hanya 127.0.0.1, DB tidak diekspos. Image digest dikunci setelah runtime aktual berhasil diuji. Credential lokal di `local/.env`, file mode 0600 dan di-ignore. |
 | Installer | FT bundled tervalidasi path/hash/version, hanya pasang jika belum ada; same/newer version no-op. Older FT diarahkan ke updater, bukan overwrite diam-diam. Switch aksi manusia terpisah dengan nonce dan konfirmasi. State setup: not_started/installed/activated/skipped. |
 | Filesystem | Dukungan implementasi awal direct writable WordPress. Immutable/file-mod-disabled diblokir. Credential-based filesystem diarahkan ke alur WP manual/pipeline; wizard credential interaktif belum dibangun. |
@@ -214,3 +214,11 @@ Sumber verifikasi teknis: [WordPress requirements](https://wordpress.org/about/r
 - Temporary record tidak boleh menjadi server archive/schedule/restore safety-journal. Container persistent volume adalah tugas pengelola; jangan mengklaim plugin dapat mount Docker atau temp durable.
 - Manual destination metadata dan pending transient per-user mengarahkan hasil engine existing ke POST download existing. Tidak ada auto-deletion setelah transfer yang belum terbukti tersimpan. Visible retry tetap tersedia jika browser memblokir auto-download.
 - Monthly calendar clamp mempertahankan tanggal asli, timezone/claims/overlap menggunakan Scheduler existing. Cloud, migrasi lokasi arsip dan production DR bukan scope.
+
+## 1 November 2026 — blueprint
+
+Satu JSON Schema untuk builder dan validasi runtime. Definitions tetap pemilik schema/field contracts; Blueprint hanya orkestrasi review/apply manusia. Template memakai PageDesign, konten memakai native WordPress, SEO memakai Settings existing. Field Page discope ID dari role, bukan slug. Tidak ada schema mutation tool AI, arbitrary options, publish, theme switch atau migrasi jenis field otomatis. Retry parsial menyimpan ID draft, tidak menghapus konten sebagai rollback. FP alpha.22 dan FT alpha.7 diperlukan untuk paket blueprint.
+
+## 3 November 2026 — distribusi alpha.23
+
+UpdateManager/ProjectManager tetap pemilik koneksi/manifest/review/install. Monitor hanya observasi metadata, tidak memberi approval atau memasang kode. Kanal stable/testing/manual, identity dari manifest saat setup, tag/project identity existing tetap terikat. Automation proyek diekspor sebagai tooling yang ikut commit proyek; builder/publisher existing dipakai bersama, tidak membuat akun/distribusi/deployment service kedua. Stable otomatis tetap diblokir. Kontrak DISTRIBUTION.md; backup HOLD.

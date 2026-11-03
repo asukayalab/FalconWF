@@ -10,9 +10,15 @@ final class ProjectManager {
     public static function save(mixed $input): true|\WP_Error {
         if (!current_user_can('fwf_manage_connections')) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }
         if (is_array($input)) { $input['repo']=GitHubClient::normalizeRepo($input['repo']??null); }
-        if (!is_array($input) || array_diff(array_keys($input),['repo','project_id','theme_id','tag']) || !GitHubClient::validRepo(is_string($input['repo']??null)?$input['repo']:'') || !self::slug($input['project_id']??null) || !self::slug($input['theme_id']??null) || !is_string($input['tag']??null)) { return new \WP_Error('FWF_VALIDATION','Isi alamat GitHub, project ID dan slug child theme yang valid.'); }
-        $selection=UpdateManager::validateSelection($input['tag']);if(is_wp_error($selection)){return $selection;}
-        update_option('fwf_project_connection',$input,false);if(get_option('fwf_project_connection')!==$input){return new \WP_Error('FWF_DB','Koneksi proyek gagal disimpan. Periksa database sebelum retry.');}delete_option('fwf_project_candidate');return true;
+        if (!is_array($input) || array_diff(array_keys($input),['repo','project_id','theme_id','tag','channel']) || !GitHubClient::validRepo(is_string($input['repo']??null)?$input['repo']:'') || (!is_string($input['project_id']??'') || (($input['project_id']??'')!=='' && !self::slug($input['project_id']))) || (!is_string($input['theme_id']??'') || (($input['theme_id']??'')!=='' && !self::slug($input['theme_id']))) || !is_string($input['tag']??null)) { return new \WP_Error('FWF_VALIDATION','Isi alamat GitHub, project ID dan slug child theme yang valid.'); }
+        $selection=self::selection($input);if(is_wp_error($selection)){return $selection;}
+        // The manifest is the identity owner; supplied identities remain constraints, never silently replaced.
+        if(empty($input['project_id']) || empty($input['theme_id'])){
+            $release=self::client($input)->release($selection);if(is_wp_error($release)){return $release;}
+            $resolved=$input;$resolved['project_id']=($input['project_id']??'')?:($release['manifest']['project_id']??null);$resolved['theme_id']=($input['theme_id']??'')?:($release['manifest']['packages'][0]['id']??null);
+            $verified=self::validateRelease($release,$resolved);if(is_wp_error($verified)){return $verified;}$input=$resolved;
+        }
+        update_option('fwf_project_connection',$input,false);if(get_option('fwf_project_connection')!==$input){return new \WP_Error('FWF_DB','Koneksi proyek gagal disimpan. Periksa database sebelum retry.');}delete_option('fwf_project_candidate');delete_option('fwf_update_observations');return true;
     }
     private static function version(mixed $value,bool $stable=false): bool { return is_string($value) && (bool)preg_match($stable?'/^\d+\.\d+\.\d+$/D':'/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.[1-9]\d*)?$/D',$value); }
     public static function validate(array $manifest,array $connection): array|\WP_Error {
@@ -23,14 +29,18 @@ final class ProjectManager {
         if (($manifest['project_id']??null)!==$connection['project_id']) { return new \WP_Error('FWF_PACKAGE','Project ID pada manifest berbeda dari koneksi situs. Periksa paket atau koneksi proyek.'); }
         if (($manifest['dirty']??null)!==false) { return new \WP_Error('FWF_PACKAGE','Paket proyek belum berasal dari checkout bersih (dirty). Commit perubahan, lalu build ulang dari checkout bersih dan terbitkan versi baru.'); }
         if (!is_string($manifest['source_commit']??null) || !preg_match('/^[a-f0-9]{40}$/D',$manifest['source_commit'])) { return new \WP_Error('FWF_PACKAGE','Commit sumber paket tidak valid atau belum tercatat. Lacak source di Git, commit, lalu build ulang.'); }
-        if (($manifest['status']??null)!==($tag===''?'stable':'development')) { return new \WP_Error('FWF_PACKAGE','Status rilis proyek tidak sesuai pilihan stabil/prerelease. Periksa tag dan manifest.'); }
-        if (!self::version($manifest['version']??null,$tag==='') || ($tag!=='' && $manifest['version']!==preg_replace('/^v/','',$tag))) { return new \WP_Error('FWF_PACKAGE','Versi manifest proyek tidak sesuai tag atau kanal rilis yang dipilih.'); }
+        if (($manifest['status']??null)!==(str_contains($tag,'-')?'development':'stable')) { return new \WP_Error('FWF_PACKAGE','Status rilis proyek tidak sesuai pilihan stabil/prerelease. Periksa tag dan manifest.'); }
+        if (!self::version($manifest['version']??null,!str_contains($tag,'-')) || ($tag!=='' && $manifest['version']!==preg_replace('/^v/','',$tag))) { return new \WP_Error('FWF_PACKAGE','Versi manifest proyek tidak sesuai tag atau kanal rilis yang dipilih.'); }
         if (!is_array($manifest['packages']??null) || !array_is_list($manifest['packages']) || count($manifest['packages'])!==1 || !is_array($manifest['packages'][0])) { return new \WP_Error('FWF_PACKAGE','Manifest proyek harus memuat tepat satu paket child theme.'); }
         $p=$manifest['packages'][0];
         if (($p['id']??null)!==$connection['theme_id']) { return new \WP_Error('FWF_PACKAGE','Slug theme pada paket berbeda dari koneksi situs. Periksa paket atau slug target.'); }
         if (($p['type']??null)!=='theme' || ($p['parent']??null)!=='falcon-theme') { return new \WP_Error('FWF_PACKAGE','Paket proyek harus berupa child theme dengan parent falcon-theme.'); }
-        if (!self::version($p['version']??null,$tag==='') || ($p['artifact']??null)!==$p['id'].'-'.$p['version'].'.zip') { return new \WP_Error('FWF_PACKAGE','Versi atau nama ZIP child theme tidak sesuai manifest. Build ulang paket.'); }
+        if (!self::version($p['version']??null,!str_contains($tag,'-')) || ($p['artifact']??null)!==$p['id'].'-'.$p['version'].'.zip') { return new \WP_Error('FWF_PACKAGE','Versi atau nama ZIP child theme tidak sesuai manifest. Build ulang paket.'); }
         if (!is_string($p['sha256']??null) || !preg_match('/^[a-f0-9]{64}$/D',$p['sha256'])) { return new \WP_Error('FWF_PACKAGE','Checksum SHA-256 pada manifest proyek tidak valid. Build ulang paket.'); }
+        if(isset($p['blueprint'])){
+            $b=$p['blueprint'];if(!is_array($b) || array_diff(array_keys($b),['schema','file','project_id','version','sha256']) || ($b['schema']??null)!==1 || ($b['file']??null)!=='falcon-blueprint.json' || ($b['project_id']??null)!==$manifest['project_id'] || ($b['version']??null)!==$manifest['version'] || !is_string($b['sha256']??null) || !preg_match('/^[a-f0-9]{64}$/D',$b['sha256'])){return new \WP_Error('FWF_PACKAGE','Descriptor blueprint tidak valid.');}
+        }
+        if(isset($p['blueprint'])){foreach(['falcon-wf'=>'0.1.0-alpha.22','falcon-theme'=>'0.1.0-alpha.7'] as $component=>$minimum){$range=$p['compatibility'][$component]??null;if(!is_array($range) || !self::version($range['min']??null) || version_compare($range['min'],$minimum,'<') || !empty($range['optional'])){return new \WP_Error('FWF_COMPATIBILITY','Blueprint memerlukan '.$component.' minimal '.$minimum.' sebagai dependency wajib.');}}}
         foreach (['min_wp'=>$GLOBALS['wp_version'],'min_php'=>PHP_VERSION] as $key=>$current) { if (!is_string($p[$key]??null) || !preg_match('/^\d+\.\d+(\.\d+)?$/D',$p[$key]) || version_compare($current,$p[$key],'<')) { return new \WP_Error('FWF_COMPATIBILITY','Versi '.($key==='min_wp'?'WordPress':'PHP').' tidak memenuhi requirement proyek atau format minimum tidak valid.'); } }
         $ranges=$p['compatibility']??null;
         if (!is_array($ranges) || !isset($ranges['falcon-theme']) || array_diff(array_keys($ranges),['falcon-theme','falcon-wf'])) { return new \WP_Error('FWF_PACKAGE','Compatibility FP/FT diperlukan.'); }
@@ -46,13 +56,32 @@ final class ProjectManager {
         return $p;
     }
     private static function client(array $connection): GitHubClient { return new GitHubClient($connection['repo']??'','FWF_PROJECT_GITHUB_TOKEN','project-manifest.json'); }
+    public static function selection(array $connection): string|\WP_Error {
+        $channel=$connection['channel']??'manual';
+        if(!in_array($channel,['stable','testing','manual'],true)){return new \WP_Error('FWF_VALIDATION','Pilih jalur pembaruan proyek.');}
+        $tag=$channel==='testing'?'*':($channel==='stable'?'':($connection['tag']??''));
+        if(!is_string($tag)){return new \WP_Error('FWF_VALIDATION','Tag proyek tidak valid.');}
+        if(($connection['channel']??null)==='manual' && $tag===''){return new \WP_Error('FWF_VALIDATION','Isi tag rilis manual.');}
+        $valid=UpdateManager::validateSelection($tag,$channel==='testing');return is_wp_error($valid)?$valid:$tag;
+    }
+    private static function validateRelease(array $release,array $connection): array|\WP_Error {
+        $selection=self::selection($connection);if(is_wp_error($selection)){return $selection;}
+        $effective=$connection;$effective['tag']=$selection===''?'':$release['tag'];
+        $p=self::validate($release['manifest'],$effective);if(is_wp_error($p)){return $p;}
+        if(preg_replace('/^v/','',$release['tag'])!==$release['manifest']['version'] || !isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Tag manifest atau ZIP proyek tidak cocok dengan release.');}
+        return $p;
+    }
+    public function discover(): array|\WP_Error {
+        $connection=self::connection();$selection=self::selection($connection);if(is_wp_error($selection)){return $selection;}
+        $release=self::client($connection)->release($selection);if(is_wp_error($release)){return $release;}
+        $p=self::validateRelease($release,$connection);if(is_wp_error($p)){return $p;}
+        return [...$release,'connection'=>$connection,'checked_at'=>time()];
+    }
     public function check(): array|\WP_Error {
         if (!current_user_can('fwf_manage_updates')) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan memeriksa paket proyek.'); }
-        delete_option('fwf_project_candidate');$connection=self::connection();$release=self::client($connection)->release($connection['tag']??'');if(is_wp_error($release)){return $release;}
-        $p=self::validate($release['manifest'],$connection);if(is_wp_error($p)){return $p;}
-        if (preg_replace('/^v/','',$release['tag'])!==$release['manifest']['version']) { return new \WP_Error('FWF_PACKAGE','Versi manifest proyek tidak cocok dengan tag release.'); }
-        if (!isset($release['assets'][$p['artifact']])) { return new \WP_Error('FWF_PACKAGE','ZIP proyek tidak ada pada release.'); }
-        $release['connection']=$connection;update_option('fwf_project_candidate',$release,false);if(get_option('fwf_project_candidate')!==$release){delete_option('fwf_project_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}$audit=Logger::write('project_check','succeeded');if(is_wp_error($audit)){delete_option('fwf_project_candidate');return $audit;}return $p;
+        delete_option('fwf_project_candidate');$release=$this->discover();if(is_wp_error($release)){return $release;}
+        update_option('fwf_project_candidate',$release,false);if(get_option('fwf_project_candidate')!==$release){delete_option('fwf_project_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
+        $audit=Logger::write('project_check','succeeded');if(is_wp_error($audit)){delete_option('fwf_project_candidate');return $audit;}return $release['manifest']['packages'][0];
     }
     public function apply(bool $backupConfirmed): true|\WP_Error {
         $connection=self::connection();$id=$connection['theme_id']??'';
@@ -65,9 +94,8 @@ final class ProjectManager {
         // Shared core/project update lock prevents compatibility changing midway through a write.
         $owner=Lock::acquire('updates');if(is_wp_error($owner)){return $owner;}$tmp=null;
         try {
-            $release=self::client($connection)->release($connection['tag']??'');if(is_wp_error($release)){return $release;}
-            $p=self::validate($release['manifest'],$connection);if(is_wp_error($p)){return $p;}
-        if (preg_replace('/^v/','',$release['tag'])!==$release['manifest']['version']) { return new \WP_Error('FWF_PACKAGE','Versi manifest proyek tidak cocok dengan tag release.'); }
+            $selection=self::selection($connection);if(is_wp_error($selection)){return $selection;}$release=self::client($connection)->release($selection);if(is_wp_error($release)){return $release;}
+            $p=self::validateRelease($release,$connection);if(is_wp_error($p)){return $p;}
             $candidate=get_option('fwf_project_candidate',[]);
             if (($candidate['connection']??null)!==$connection || ($candidate['manifest']??null)!==$release['manifest'] || ($candidate['tag']??null)!==$release['tag'] || !isset($release['assets'][$p['artifact']])) { return new \WP_Error('FWF_CONFLICT','Paket/koneksi berubah atau belum diperiksa. Periksa ulang sebelum menerapkan.'); }
             $theme=wp_get_theme($id);$current=$theme->exists()?$theme->get('Version'):'';

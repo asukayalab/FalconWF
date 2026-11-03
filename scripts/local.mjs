@@ -60,10 +60,10 @@ if (action === 'setup') {
       checkInstalledRuntime();
       run(['exec','-T','wordpress','php','/fwf-tests/lint.php']);
       run(['exec','-T','wordpress','php','/fwf-tests/update-policy.php']);
-      for (const file of ['page-design.php','content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
+      for (const file of ['distribution.php','blueprint.php','page-design.php','content.php','builder.php','native-save.php','design.php','seo.php','backup.php','provider.php','update.php','immutable.php']) {
         run(['run','--rm','cli','wp','eval-file',`/fwf-tests/${file}`]);
       }
-      for (const test of ['tests/backup-transit.test.mjs','tests/project-contract.test.mjs','tests/page-design-http.test.mjs','tests/backup-storage.test.mjs','tests/backup-storage-http.test.mjs','tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/oauth.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
+      for (const test of ['tests/blueprint-package.test.mjs','tests/blueprint-http.test.mjs','tests/backup-transit.test.mjs','tests/project-contract.test.mjs','tests/page-design-http.test.mjs','tests/backup-storage.test.mjs','tests/backup-storage-http.test.mjs','tests/backup-recovery.test.mjs','tests/backup-media.test.mjs','tests/backup-schedule.test.mjs','tests/backup-retention.test.mjs','tests/backup-jobs.test.mjs','tests/project-update.test.mjs','tests/backup-http.test.mjs','tests/mcp.test.mjs','tests/oauth.test.mjs','tests/admin.test.mjs','tests/frontend.test.mjs','tests/project.test.mjs']) {
         const r=spawnSync(process.execPath,[test],{cwd:root,stdio:'inherit'});
         if(r.status!==0) throw new Error(`Integration check failed: ${test} (exit ${r.status ?? 1}).`);
       }

@@ -1,8 +1,32 @@
 {
   "schema": 1,
-  "required_files": ["style.css", "index.php"],
-  "text_extensions": ["php", "css", "js", "mjs", "svg"],
-  "binary_extensions": ["png", "jpg", "jpeg", "gif", "webp", "avif", "ico", "woff", "woff2", "ttf", "otf"],
+  "required_files": [
+    "style.css",
+    "index.php"
+  ],
+  "text_extensions": [
+    "php",
+    "css",
+    "js",
+    "mjs",
+    "svg"
+  ],
+  "binary_extensions": [
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "webp",
+    "avif",
+    "ico",
+    "woff",
+    "woff2",
+    "ttf",
+    "otf"
+  ],
   "max_expanded_bytes": 41943040,
-  "max_archive_bytes": 20971520
+  "max_archive_bytes": 20971520,
+  "json_files": [
+    "falcon-blueprint.json"
+  ]
 }

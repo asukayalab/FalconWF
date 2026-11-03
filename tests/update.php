@@ -14,7 +14,7 @@ $zipPath=wp_tempnam('fwf-update-fixture.zip');$zip=new ZipArchive();$zip->open($
 $iterator=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS));
 foreach($iterator as $file){$relative=substr($file->getPathname(),strlen($root)+1);$bytes=file_get_contents($file->getPathname());if($relative==='style.css'){$bytes=preg_replace('/^Version:.*$/m','Version: 0.1.1',$bytes);}$zip->addFromString('falcon-theme/'.$relative,$bytes);}$zip->close();
 $package=['id'=>'falcon-theme','type'=>'theme','version'=>'0.1.1','artifact'=>'falcon-theme-0.1.1.zip','sha256'=>hash_file('sha256',$zipPath),'min_wp'=>'6.7','min_php'=>'8.3'];
-$manifest=['schema'=>1,'status'=>'stable','dirty'=>false,'source_commit'=>str_repeat('a',40),'packages'=>[$package]];
+$manifest=['schema'=>1,'version'=>'0.1.1','status'=>'stable','dirty'=>false,'source_commit'=>str_repeat('a',40),'packages'=>[$package]];
 $corrupt=false;$redirect=false;$prerelease=false;$duplicate=false;$listTag='v0.1.2-alpha.1';$paged=false;
 $mock=static function($pre,$args,$url) use ($zipPath,$pluginZip,&$manifest,&$corrupt,&$redirect,&$prerelease,&$duplicate,&$listTag,&$paged) {
  if(isset($args['headers']['Authorization'])){throw new RuntimeException('Public release must not send configured token.');}

@@ -74,7 +74,7 @@ final class GitHubClient {
             'headers'=>['Accept'=>'application/vnd.github+json','X-GitHub-Api-Version'=>'2022-11-28','User-Agent'=>'Falcon-WF']]);
         if (is_wp_error($r) || wp_remote_retrieve_response_code($r)!==200) { return new \WP_Error('FWF_UPSTREAM','Belum menemukan pembaruan pada jalur yang dipilih. Periksa koneksi atau coba lagi setelah pengelola menerbitkan versi baru.'); }
         $release=json_decode(wp_remote_retrieve_body($r),true);
-        if (!is_array($release) || ($release['draft']??null)!==false || (($release['prerelease']??null)!==($tag!=='')) || ($tag!=='' && ($release['tag_name']??'')!==$tag) || !is_array($release['assets']??null)) { return new \WP_Error('FWF_PACKAGE','Release tidak cocok dengan jalur stable/prerelease yang dipilih.'); }
+        if (!is_array($release) || ($release['draft']??null)!==false || (($release['prerelease']??null)!==str_contains($tag,'-')) || ($tag!=='' && ($release['tag_name']??'')!==$tag) || !is_array($release['assets']??null)) { return new \WP_Error('FWF_PACKAGE','Release tidak cocok dengan jalur stable/prerelease yang dipilih.'); }
         $assets=[];
         foreach ($release['assets'] as $asset) {
             if (!is_string($asset['name']??null) || !is_int($asset['id']??null) || $asset['id']<1) { return new \WP_Error('FWF_PACKAGE','Metadata asset tidak valid.'); }

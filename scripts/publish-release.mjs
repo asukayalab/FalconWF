@@ -81,9 +81,9 @@ async function tagCommit(gh, base, tag) {
   throw new Error('Annotated release tag exceeds the traversal limit.');
 }
 
-export async function publishRelease({release, gh}) {
+export async function publishRelease({release, gh, validate = validateArtifacts}) {
   // Revalidate at the mutation boundary; a caller cannot authorize arbitrary upload paths through a constructed object.
-  const checked = validateArtifacts({root: release.root, expectedSha: release.commit, repository: release.repository});
+  const checked = validate({root: release.root, expectedSha: release.commit, repository: release.repository});
   requireCondition(checked.tag === release.tag, 'Release tag changed after validation.');
   release = checked;
   const base = `repos/${release.repository}`;
@@ -98,16 +98,16 @@ export async function publishRelease({release, gh}) {
   if (commit === null) {
     await gh.run(['api', `${base}/git/refs`, '--method', 'POST', '-f', `ref=refs/tags/${release.tag}`, '-f', `sha=${release.commit}`]);
   }
-  await gh.run(['release', 'create', release.tag, '--repo', release.repository, '--target', release.commit, '--title', `Falcon WF ${release.version}`, '--notes-file', release.notes, '--draft', '--prerelease', '--latest=false', '--verify-tag']);
+  await gh.run(['release', 'create', release.tag, '--repo', release.repository, '--target', release.commit, '--title', `${release.title ?? "Falcon WF"} ${release.version}`, '--notes-file', release.notes, '--draft', '--prerelease', '--latest=false', '--verify-tag']);
   await gh.run(['release', 'upload', release.tag, ...release.files, '--repo', release.repository]);
   const draft = await findRelease(gh, base, release.tag);
   requireCondition(draft !== null, 'Uploaded draft is missing from authenticated release list.');
   requireCondition(draft.tag_name === release.tag && draft.draft === true && draft.prerelease === true && draft.target_commitish === release.commit, 'Uploaded draft release identity does not match checked source.');
   const expected = new Map(release.files.map(file => {
-    const bytes = fileBytes(file, release.root);
+    const bytes = fileBytes(file, release.artifactRoot ?? release.root);
     return [path.basename(file), {size: bytes.length, digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}`}];
   }));
-  requireCondition(Array.isArray(draft.assets) && draft.assets.length === expected.size, 'Draft release must have exactly three assets.');
+  requireCondition(Array.isArray(draft.assets) && draft.assets.length === expected.size, 'Draft release asset count differs from checked assets.');
   for (const asset of draft.assets) {
     requireCondition(expected.has(asset.name) && expected.get(asset.name).size === asset.size && expected.get(asset.name).digest === asset.digest && asset.state === 'uploaded', 'Draft release asset is missing, incomplete or unexpected.');
     expected.delete(asset.name);
@@ -119,7 +119,7 @@ export async function publishRelease({release, gh}) {
   return {status: 'published', tag: release.tag};
 }
 
-function githubCli() {
+export function githubCli() {
   function run(args) {
     const result = spawnSync('gh', args, {encoding: 'utf8', maxBuffer: 2 * 1024 * 1024});
     if (result.error) throw result.error;

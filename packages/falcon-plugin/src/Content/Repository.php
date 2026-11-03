@@ -25,7 +25,7 @@ final class Repository {
         return true;
     }
     public static function metadataRevision(int $id,string $type): string {
-        return hash('sha256',wp_json_encode([Schema::custom($type),Schema::values($id,$type)]));
+        return hash('sha256',wp_json_encode([Schema::custom($type,$id),Schema::values($id,$type)]));
     }
     public static function nativeRevision(int $id): string {
         $post=get_post($id);
@@ -41,16 +41,16 @@ final class Repository {
         $this->nativeWrites[$id]=['owner'=>$owner,'builder'=>$builder,'staged'=>false];
         $post=get_post($id);
         $error=null;
-        if (!$post || !Schema::custom($post->post_type)) { $error=new \WP_Error('FWF_NOT_FOUND','Field tidak tersedia.'); }
+        if (!$post || !Schema::custom($post->post_type,$id)) { $error=new \WP_Error('FWF_NOT_FOUND','Field tidak tersedia.'); }
         elseif (!hash_equals(self::metadataRevision($id,$post->post_type),$metaRevision) || !hash_equals(self::nativeRevision($id),$nativeRevision)) {
             $error=new \WP_Error('FWF_CONFLICT','Konten, field atau definisi berubah. Muat ulang editor sebelum menyimpan.');
         } else {
-            foreach (Schema::custom($post->post_type) as $key=>$definition) {
+            foreach (Schema::custom($post->post_type,$id) as $key=>$definition) {
                 if (!array_key_exists($key,$fields)) { $error=new \WP_Error('FWF_VALIDATION','Field belum dikirim: '.$definition['label']); break; }
             }
-            if (!$error && array_diff(array_keys($fields),array_keys(Schema::custom($post->post_type)))) { $error=new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
+            if (!$error && array_diff(array_keys($fields),array_keys(Schema::custom($post->post_type,$id)))) { $error=new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
             if (!$error) {
-                $data=Schema::validate($fields,$post->post_type);
+                $data=Schema::validate($fields,$post->post_type,$id);
                 if (is_wp_error($data)) { $error=$data; }
                 else { $this->nativeWrites[$id]['meta']=$data['meta']; }
             }
@@ -94,10 +94,10 @@ final class Repository {
         if (!current_user_can('edit_post',$id) || in_array('fwf_agent',(array)wp_get_current_user()->roles,true)) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }
         $owner=Lock::acquire('content_'.$id); if (is_wp_error($owner)) { return $owner; }
         try {
-            $p=get_post($id); if (!$p || !Schema::custom($p->post_type)) { return new \WP_Error('FWF_NOT_FOUND','Field tidak tersedia.'); }
+            $p=get_post($id); if (!$p || !Schema::custom($p->post_type,$id)) { return new \WP_Error('FWF_NOT_FOUND','Field tidak tersedia.'); }
             if (!hash_equals(self::metadataRevision($id,$p->post_type),$expected)) { return new \WP_Error('FWF_CONFLICT','Field atau definisi berubah. Muat ulang editor sebelum menyimpan field.'); }
-            if (array_diff(array_keys($fields),array_keys(Schema::custom($p->post_type)))) { return new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
-            $data=Schema::validate($fields,$p->post_type); if (is_wp_error($data)) { return $data; }
+            if (array_diff(array_keys($fields),array_keys(Schema::custom($p->post_type,$id)))) { return new \WP_Error('FWF_VALIDATION','Custom field tidak dikenal.'); }
+            $data=Schema::validate($fields,$p->post_type,$id); if (is_wp_error($data)) { return $data; }
             $audit=Logger::write('content_fields','started',$id); if (is_wp_error($audit)) { return $audit; }
             $saved=$this->saveMeta($id,$data['meta']); if (is_wp_error($saved)) { return $saved; }
             wp_save_post_revision($id); $logged=Logger::write('content_fields','succeeded',$id); return is_wp_error($logged)?$logged:true;
@@ -105,8 +105,8 @@ final class Repository {
     }
     public function create(string $type, array $fields): array|\WP_Error {
         if (!in_array($type,$this->types(),true) || !current_user_can(get_post_type_object($type)->cap->create_posts)) { return new \WP_Error('FWF_PERMISSION','Jenis konten atau izin create tidak tersedia.'); }
-        $data = Schema::validate($fields,$type); if (is_wp_error($data)) { return $data; }
-        foreach (Schema::custom($type) as $key=>$d) { if (!empty($d['required']) && !array_key_exists($key,$fields)) { return new \WP_Error('FWF_VALIDATION','Field wajib diisi: '.$d['label']); } }
+        $data = Schema::validate($fields,$type,0); if (is_wp_error($data)) { return $data; }
+        foreach (Schema::custom($type,0) as $key=>$d) { if (!empty($d['required']) && !array_key_exists($key,$fields)) { return new \WP_Error('FWF_VALIDATION','Field wajib diisi: '.$d['label']); } }
         $audit=Logger::write('draft_create','started'); if (is_wp_error($audit)) { return $audit; }
         $id = wp_insert_post(wp_slash(array_merge($data['post'],['post_type'=>$type,'post_status'=>'draft','post_author'=>get_current_user_id()])),true);
         if (is_wp_error($id)) { Logger::write('draft_create','failed'); return new \WP_Error('FWF_INTERNAL','Draft gagal disimpan.'); }
@@ -121,7 +121,7 @@ final class Repository {
         try {
             $current=$this->get($id); if (is_wp_error($current)) { return $current; }
             if (($draftOnly && $current['status']!=='draft') || !current_user_can('edit_post',$id)) { return new \WP_Error('FWF_PERMISSION','Status konten atau izin edit tidak tersedia.'); }
-            $data=Schema::validate($fields,$current['type']); if (is_wp_error($data)) { return $data; }
+            $data=Schema::validate($fields,$current['type'],$id); if (is_wp_error($data)) { return $data; }
             if (!hash_equals($current['revision'],$expected)) { return new \WP_Error('FWF_CONFLICT','Konten berubah; baca ulang dan review revisi baru.'); }
             $audit=Logger::write('content_edit','started',$id); if (is_wp_error($audit)) { return $audit; }
             $result=wp_update_post(wp_slash(array_merge($data['post'],['ID'=>$id])),true);

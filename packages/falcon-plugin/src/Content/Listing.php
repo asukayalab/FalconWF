@@ -16,7 +16,7 @@ final class Listing {
         $posts=get_posts($query); if (!$posts) { return '<p class="fwf-listing-empty">Belum ada konten.</p>'; }
         $html='<div class="fwf-listing">';
         foreach ($posts as $p) {
-            $values=Schema::values($p->ID,$type); $defs=Schema::custom($type);
+            $values=Schema::values($p->ID,$type); $defs=Schema::custom($type,$p->ID);
             $cover=!empty($defs['cover_image']['public'])?(int)($values['cover_image']??0):0;
             $html.='<article><a href="'.esc_url(get_permalink($p)).'">'.($cover?wp_get_attachment_image($cover,'medium'):'').'<h3>'.esc_html(get_the_title($p)).'</h3></a><p>'.esc_html(wp_trim_words(wp_strip_all_tags($p->post_excerpt?:$p->post_content),25)).'</p></article>';
         }

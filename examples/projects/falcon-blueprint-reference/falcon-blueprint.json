@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "project_id": "falcon-blueprint-reference",
+  "version": "0.1.0-alpha.1",
+  "website": {
+    "name": "Blueprint example",
+    "purpose": "Contoh Page, hero terpisah dan field yang dapat diedit klien.",
+    "audience": "Pengunjung website",
+    "language": "id"
+  },
+  "pages": [
+    {
+      "key": "about",
+      "title": "About",
+      "slug": "about",
+      "template": "page-about.php"
+    },
+    {
+      "key": "contact",
+      "title": "Kontak",
+      "slug": "kontak",
+      "template": "page-contact.php"
+    }
+  ],
+  "definitions": {
+    "groups": {
+      "example_about": {
+        "label": "Isi halaman About",
+        "active": true,
+        "types": [
+          "page"
+        ],
+        "page_roles": [
+          "about"
+        ],
+        "fields": [
+          {
+            "key": "example_hero",
+            "label": "Tulisan hero",
+            "kind": "text",
+            "default": "Tentang kami",
+            "public": true,
+            "required": false,
+            "help": "Terpisah dari judul Page dan URL."
+          }
+        ]
+      }
+    },
+    "taxonomies": {
+      "fwf_example_tag": {
+        "label": "Tag halaman",
+        "active": true,
+        "types": [
+          "page"
+        ],
+        "slug": "tag-halaman",
+        "model": "tag"
+      }
+    }
+  },
+  "terms": [
+    {
+      "taxonomy": "fwf_example_tag",
+      "name": "Profil",
+      "slug": "profil"
+    }
+  ],
+  "seo": {
+    "mode": "external",
+    "notes": "Judul dokumen/canonical/robots mengikuti WordPress dan owner SEO yang aktif. Tidak mengubah visibility situs."
+  },
+  "instructions": [
+    "Review Page existing sebelum memilih struktur baru.",
+    "Page baru masih draft. Isi konten lalu terbitkan secara manual.",
+    "Pilih homepage dan aktivasi theme melalui langkah manusia terpisah."
+  ]
+}

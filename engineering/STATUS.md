@@ -1,6 +1,6 @@
 # Status implementasi Falcon WF
 
-Build lokal produk/FP: 0.1.0-alpha.21; FT: 0.1.0-alpha.6. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
+Build lokal produk/FP: 0.1.0-alpha.23; FT: 0.1.0-alpha.7. Target akhir tetap Falcon WF 0.1. Ini prerelease lokal, belum production-ready.
 
 Sudah diimplementasikan: bootstrap/lifecycle/initial migration, satu menu dan dua belas layar admin, settings identitas, registry dengan dependencies, CPT dasar, content repository dan revisions, izin/audit, installer FT bundled, parent theme fallback, maintenance, public/admin REST, policy/guard/tools dan inbound MCP, outbound proposal/human apply, public/private release/check/update melalui WP upgrader, build deterministik dan runtime inventory.
 
@@ -18,14 +18,14 @@ Alpha.5 menambahkan koneksi repo proyek terpisah, check/review/install/update sa
 
 | Gate | Status dan batas |
 |---|---|
-| Q01 Integrasi | Static inventory dan jalur runtime inti lokal lulus; contoh child theme generik membuktikan empat route lokal. Installer repo proyek diuji fixture/actual WordPress lokal; live repo dan pilot klien/Rizal belum diterima. |
+| Q01 Integrasi | Static inventory dan jalur runtime inti lokal lulus; contoh child theme generik membuktikan empat route lokal. Installer repo proyek diuji fixture dan public GitHub trial → WordPress lokal alpha.23; hosting/klien/Rizal belum diterima. |
 | Q02 Packaging | ZIP/runtime/asset/hash/FT bundle dan repeat-build lulus; Build deterministik dan versi FP/FT independen diuji; ZIP contoh proyek terpisah dengan inventory/hash/compatibility. Provenance commit/dirty aktual di manifest artefak. Lisensi distribusi belum ditentukan. |
 | Q03 Installer | Fresh/existing/retry/same-newer-older/corrupt/local role denial diuji. Preflight permission/temp/disk dan guidance retry tersedia; simulasi credential filesystem dan traversal ZIP diuji. Disk exhaustion nyata, credential wizard interaktif, recovery insiden dan matrix host belum lengkap. |
 | Q04 Content | Native fields/revision/draft visibility, schema validation dan module disable/dependency diuji. Typed fields, media/relasi modul contoh, metadata conflict/revisions/restore serta edit manusia diuji. Builder dinamis dan taxonomy/listing diuji lokal; guard invalid/stale native form dan field-required publish diterapkan; contract pilot Rizal, repeater, adapter Gutenberg gabungan dan transaksi universal belum tersedia. Bukti regresi terbaru ada di EVIDENCE.md. |
 | Q05 Admin/security | Admin/editor HTTP screens/action/nonce serta agent REST/XML-RPC boundaries diuji. Independent security review belum dilakukan. |
 | Q06 Outbound | Adapter/proposal/review/error/disconnect dapat diuji dengan fixture; real provider request belum tersedia. **Belum lulus gate rilis.** |
 | Q07 Inbound | Node client HTTP MCP initialization/discovery/read/create/edit/revoke lulus lokal. Client target dan staging HTTPS eksternal belum diuji. **Belum lulus gate rilis.** |
-| Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Transport publik sungguhan dan hash/ZIP FPalpha.14/FTalpha.6 terverifikasi tanpa token pada alpha.15. Pemasangan update hosting, recovery insiden dan live distribusi paket proyek belum lulus. |
+| Q08 Update/recovery | Actual WordPress plugin self-update dan theme upgrader diuji lokal dengan mocked GitHub metadata/download; pilihan tag prerelease local/staging, clean provenance, kandidat yang direview, corrupt/redirect/no-downgrade dan pre-install failure checks. Transport publik sungguhan dan hash/ZIP FPalpha.14/FTalpha.6 terverifikasi tanpa token pada alpha.15. Public GitHub proyek → WordPress lokal lulus trial alpha.23; pemasangan hosting, recovery insiden dan distribusi private/klien belum lulus. |
 | Q09 Data | Initial migration retry/settings preserve/nonpurge checks. Fondasi backup/restore local/staging bounded tersedia; fixture tabel kloning menguji pemulihan/rollback. Antrean/progres/retry backup tersedia lokal. Backup berkala lokal tersedia alpha.12 dan media terpilih alpha.13; journal/rescue terputus lokal tersedia alpha.14; cloud, host rehearsal dan RPO/RTO belum tersedia. |
 | Q10 UX | Frontend/default, child homepage/detail Project pada desktop/HP dan admin lokal direview browser; status ukuran dan bukti aktual di EVIDENCE. HTTP admin menguji human fields/nonce/stale denial. Matrix Safari/Android, seluruh keyboard flow dan host belum lengkap. |
 | Q11 Panduan pengguna | Panduan lengkap FWF 0.1 (pengisian/aktivasi koneksi core, proyek dan dua arah AI, desain, SEO serta recovery) belum dibuat; disiapkan menjelang rilis sesuai permintaan user. |
@@ -75,3 +75,9 @@ Alpha.19 lokal: Halaman & Desain menampilkan Page (20 per halaman) dan named tem
 Alpha.20 lokal (kelompok1 roadmap revisi): builder/verifier proyek membaca kontrak runtime bersama; style/index wajib, JS/module/SVG/gambar/font didukung dan byte biner dipertahankan. Error provenance/identitas/versi/kanal dan copy check/apply diperjelas. Tidak mengubah alur backup, blueprint atau discovery updater. Bukti final di EVIDENCE.md; belum publish/deploy.
 
 Alpha.21 lokal: aktivasi/aksi backup menyiapkan private storage otomatis, termasuk fallback transit privat untuk download saja. Backup manual server/download satu engine; per-user pending download POST ber-nonce dengan tombol retry dan tanpa auto-delete archive. Monthly1–31 clamp bulan pendek ditambahkan. Configured storage/arsip tidak dipindah. Arsip server/jadwal/restore memerlukan storage tetap; hosting container perlu volume privat pengelola. Cloud tetap ditunda; hosted acceptance belum selesai.
+
+## Alpha.22 — blueprint proyek
+
+Setup deklaratif tersedia lokal di Halaman & Desain: review, mapping Page existing atau draft baru, pilihan struktur lama/baru, field group scoped Page, type/taxonomy/term dan mode SEO supported. Konten, URL dan nilai existing dipertahankan. State parsial dapat direview ulang untuk retry tanpa duplikat. Contract: PROJECT-BLUEPRINT.md. Backup ditahan sesuai permintaan pengguna; baseline alpha.21 tidak dikembangkan selain memasukkan state blueprint dan field contracts ke cakupan settings. Belum commit/push/deploy atau acceptance hosting.
+
+Alpha.23 menambahkan discovery identitas proyek, kanal proyek otomatis dan tag manual core/proyek; cek metadata twicedaily WP-Cron/notifikasi admin terpisah dari kandidat review manusia. Kit automation proyek memakai builder dan publisher existing di repo desain terpisah. Kontrak di DISTRIBUTION.md; bukti lokal dan GitHub nyata dicatat terpisah di EVIDENCE.md. Backup tetap HOLD.

@@ -42,7 +42,7 @@ final class Verifier {
                 if(!str_starts_with($name,$root) || str_contains($name,'..') || str_contains($name,'\\') || str_contains($name,"\0") || array_intersect(explode('/',rtrim($name,'/')),['','.']) || isset($seen[$name]) || (($attr>>16)&0170000)===0120000 || $total>$expandedLimit){return new \WP_Error('FWF_PACKAGE','ZIP path/ukuran tidak aman.');}$seen[$name]=true;
                 if($project && !str_ends_with($name,'/')){
                     $relative=substr($name,strlen($root));$extension=pathinfo($relative,PATHINFO_EXTENSION);
-                    if(!in_array($extension,array_merge($contract['text_extensions'],$contract['binary_extensions']),true)){return new \WP_Error('FWF_PACKAGE','Jenis aset atau ukuran runtime proyek tidak didukung.');}
+                    if(!in_array($extension,array_merge($contract['text_extensions'],$contract['binary_extensions']),true) && !in_array($relative,$contract['json_files']??[],true)){return new \WP_Error('FWF_PACKAGE','Jenis aset atau ukuran runtime proyek tidak didukung.');}
                 }
             }
             $header=$zip->getFromName($root.($package['type']==='plugin'?'falcon-wf.php':'style.css'));
@@ -52,6 +52,14 @@ final class Verifier {
                 foreach($project?$contract['required_files']:['index.php'] as $required){if(!isset($seen[$root.$required])){return new \WP_Error('FWF_PACKAGE','Paket theme tidak lengkap: '.$required.' wajib tersedia. Build ulang paket proyek.');}}
             }
             if (isset($package['parent']) && (!preg_match('/^[ *]*Template:[ \t]*(.+)$/m',$header,$parent) || trim($parent[1])!==$package['parent'])) { return new \WP_Error('FWF_PACKAGE','Parent header tidak cocok dengan manifest.'); }
+            if($project){
+                $file='falcon-blueprint.json';$present=isset($seen[$root.$file]);$descriptor=$package['blueprint']??null;
+                if($present!==($descriptor!==null)){return new \WP_Error('FWF_PACKAGE','Blueprint ZIP dan descriptor manifest tidak cocok. Build ulang proyek.');}
+                if($present){$raw=$zip->getFromName($root.$file);if(!is_string($raw) || strlen($raw)>262144 || !hash_equals($descriptor['sha256'],$raw===false?'':hash('sha256',$raw))){return new \WP_Error('FWF_PACKAGE','Checksum/ukuran blueprint tidak cocok.');}
+                    $doc=json_decode($raw,true);if(!is_array($doc) || ($doc['project_id']??null)!==$descriptor['project_id'] || ($doc['version']??null)!==$descriptor['version']){return new \WP_Error('FWF_PACKAGE','Identitas/versi blueprint tidak cocok.');}
+                    $valid=\FalconWF\Content\Blueprint::validateDocument($doc);if(is_wp_error($valid)){return $valid;}
+                }
+            }
             return true;
         } finally {$zip->close();}
     }

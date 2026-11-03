@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "project_id": "falcon-blueprint-reference",
+  "version": "0.1.0-alpha.1",
+  "status": "development",
+  "package": {
+    "id": "falcon-blueprint-reference",
+    "type": "theme",
+    "parent": "falcon-theme"
+  },
+  "min_wp": "6.7",
+  "min_php": "8.3",
+  "compatibility": {
+    "falcon-theme": {
+      "min": "0.1.0-alpha.7",
+      "max_exclusive": "0.2.0"
+    },
+    "falcon-wf": {
+      "min": "0.1.0-alpha.22",
+      "max_exclusive": "0.2.0"
+    }
+  },
+  "runtime": [
+    "style.css",
+    "index.php",
+    "page-about.php",
+    "page-contact.php",
+    "falcon-blueprint.json"
+  ]
+}

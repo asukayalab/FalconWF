@@ -72,7 +72,7 @@ final class Dashboard {
                 $this->text('name','Nama identitas proyek',$identity['name']);
                 echo '<p><label for="fwf-contact">Kontak publik</label><br><textarea id="fwf-contact" name="contact" rows="4" maxlength="500">'.esc_textarea($identity['contact']).'</textarea></p>';
                 $this->end('Simpan identitas'); $this->seo(); break;
-            case 'pages': PageDesign::render(); break;
+            case 'pages': \FalconWF\Content\Blueprint::render(); PageDesign::render(); break;
             case 'design': $this->design(); break;
             case 'backup': $this->backup(); break;
             case 'modules':
@@ -90,14 +90,16 @@ final class Dashboard {
                 $channel=\FalconWF\Updates\UpdateManager::channel();
                 echo '<p><label for="fwf-update-channel">Versi yang ingin diterima</label><br><select id="fwf-update-channel" name="update_channel"><option value="stable" '.selected($channel,'stable',false).'>Stabil — disarankan untuk website klien</option>';
                 if (in_array(wp_get_environment_type(),['local','staging'],true)) { echo '<option value="testing" '.selected($channel,'testing',false).'>Uji coba — untuk website trial</option>'; }
-                echo '</select></p><p>Stabil menerima versi resmi. Uji coba menerima versi pengembangan terbaru dan hanya tersedia pada situs trial.</p><details><summary>Pengaturan sumber pembaruan (untuk pengelola)</summary>';
+                echo '<option value="manual" '.selected($channel,'manual',false).'>Tag manual — pengelola</option></select></p><p>Stabil menerima versi resmi. Uji coba menerima versi pengembangan terbaru dan hanya tersedia pada situs trial.</p><details><summary>Pengaturan sumber pembaruan (untuk pengelola)</summary>';
                 $this->text('repo','Alamat GitHub sumber pembaruan',\FalconWF\Updates\UpdateManager::repo());
+                $this->text('update_tag','Tag rilis (hanya jalur manual)',get_option('fwf_update_tag',''),'text',false);
                 echo '<p>Sumber bawaan Falcon WF sudah terisi. Repo publik tidak membutuhkan token.</p></details>';
                 $this->end('Simpan pengaturan pembaruan');
                 echo '<p><a class="button button-primary" href="'.esc_url(admin_url('admin.php?page=falcon-wf-updates')).'">Buka Pembaruan</a></p><details><summary>Koneksi desain website (untuk pengelola)</summary>'; $this->projectConnection();echo '</details>'; break;
             case 'updates':
+                \FalconWF\Updates\Monitor::render();
                 $this->start('check_updates',$page); $this->end('Periksa pembaruan');
-                echo '<p>Versi yang diterima: <strong>'.esc_html(\FalconWF\Updates\UpdateManager::channel()==='testing'?'Uji coba terbaru':'Stabil terbaru').'</strong>. Nomor versi dicari otomatis.</p>';
+                echo '<p>Versi yang diterima: <strong>'.esc_html(\FalconWF\Updates\UpdateManager::channel()==='manual'?'Tag manual '.get_option('fwf_update_tag',''):(\FalconWF\Updates\UpdateManager::channel()==='testing'?'Uji coba terbaru':'Stabil terbaru')).'</strong>. Sumber dan jalur diatur melalui Proyek &amp; Koneksi.</p>';
                 $candidate=get_option('fwf_release_candidate',[]);
                 foreach (['falcon-wf'=>'Falcon Plugin','falcon-theme'=>'Falcon Theme'] as $id=>$label) {
                     $installed=\FalconWF\Updates\UpdateManager::installedVersion($id);
@@ -131,24 +133,30 @@ final class Dashboard {
         $connection=ProjectManager::connection();echo '<section class="fwf-panel"><h2>Paket desain proyek</h2><p>Satu child theme per koneksi situs. Repo menyimpan desain/template; konten dan pengaturan desain tetap di situs. Pemasangan tidak mengaktifkan theme.</p>';
         $this->start('save_project','connections');
         $this->text('project_repo','Repo desain klien (URL GitHub atau owner/name)',$connection['repo']??'');
-        $this->text('project_id','Project ID di project-manifest.json',$connection['project_id']??'');
-        $this->text('theme_id','Slug folder child theme',$connection['theme_id']??'');
-        $this->text('project_tag','Tag prerelease (local/staging; kosong = stable)',$connection['tag']??'','text',false);
-        echo '<p>Repo desain publik tidak membutuhkan token. Repo private memerlukan credential read-only FWF_PROJECT_GITHUB_TOKEN pada server. Release proyek berisi project-manifest.json dan ZIP child theme dari commit bersih.</p>';
+        $channel=$connection['channel']??(!empty($connection['tag'])?'manual':'stable');echo '<p><label>Versi desain yang diterima <select name="project_channel">';foreach(['stable'=>'Stabil terbaru','testing'=>'Uji coba terbaru','manual'=>'Tag manual — pengelola'] as $value=>$label){if($value==='testing' && !in_array(wp_get_environment_type(),['local','staging'],true)){continue;}echo '<option value="'.esc_attr($value).'" '.selected($channel,$value,false).'>'.esc_html($label).'</option>';}echo '</select></label></p>';
+        echo '<p>Identitas desain ditemukan dari rilis jika belum diisi. Pengaturan berikut bersifat opsional untuk pengelola.</p><details><summary>Identitas dan tag manual</summary>';
+        $this->text('project_id','Project ID (kosong: temukan dari rilis)',$connection['project_id']??'','text',false);
+        $this->text('theme_id','Slug theme (kosong: temukan dari rilis)',$connection['theme_id']??'','text',false);
+        $this->text('project_tag','Tag rilis (hanya jalur manual)',$connection['tag']??'','text',false);
+        echo '</details><p>Repo desain publik tidak membutuhkan token. Repo private memerlukan credential read-only FWF_PROJECT_GITHUB_TOKEN pada server. Release proyek berisi project-manifest.json dan ZIP child theme dari commit bersih.</p>';
         $this->end('Simpan koneksi proyek');
         if ($connection) { $this->start('disconnect_project','connections');echo '<p>Putus koneksi mempertahankan file theme, konten dan pengaturan desain.</p>';$this->end('Putus koneksi proyek'); }
         echo '</section>';
     }
     private function projectUpdates(): void {
         $connection=ProjectManager::connection();echo '<section class="fwf-panel"><h2>Paket desain proyek</h2>';
-        if (!$connection) { echo '<p>Isi repo dan identitas paket di <a href="'.esc_url(admin_url('admin.php?page=falcon-wf-connections')).'">Proyek &amp; Koneksi</a> terlebih dahulu.</p></section>';return; }
+        if (!$connection) { echo '<p>Hubungkan repo desain sekali melalui <a href="'.esc_url(admin_url('admin.php?page=falcon-wf-connections')).'">Proyek &amp; Koneksi</a> terlebih dahulu.</p></section>';return; }
         $theme=wp_get_theme($connection['theme_id']??'');
         echo '<p>Repo: '.esc_html($connection['repo']??'').' · Theme: '.esc_html($connection['theme_id']??'').' · Terpasang: '.esc_html($theme->exists()?$theme->get('Version'):'belum').'.</p>';
         $this->start('check_project','updates');$this->end('Periksa paket proyek');
         $candidate=get_option('fwf_project_candidate',[]);$p=$candidate['manifest']['packages'][0]??null;
         if (is_array($p) && ($candidate['connection']??null)===$connection) {
+            if(!empty($candidate['checked_at'])){echo '<p>Terakhir diperiksa: '.esc_html(wp_date('d M Y, H:i',(int)$candidate['checked_at'])).'.</p>';}
+            if(!empty($candidate['notes'])){echo '<h3>Catatan perubahan desain</h3><pre style="white-space:pre-wrap">'.esc_html($candidate['notes']).'</pre>';}
+            if(!$theme->exists() || version_compare($p['version'],$theme->get('Version'),'>')) {
             echo '<p>Target: '.esc_html($p['id'].' → '.$p['version']).'. Manifest, identitas, kompatibilitas FP/FT dan keberadaan asset rilis telah diperiksa. ZIP diunduh, lalu checksum dan isinya diverifikasi saat Apply sebelum pemasangan.</p>';
             $this->start('apply_project','updates');echo '<p><label><input type="checkbox" name="backup" value="yes" required> Backup tersedia, paket telah diuji pada staging, dan saya memilih memasang/memperbarui file desain ini.</label></p>';$this->end($theme->exists()?'Perbarui desain proyek':'Pasang desain proyek');
+            }else{echo '<p>Tidak ada versi desain yang lebih baru.</p>';}
         }
         if ($theme->exists()) { echo '<p><a href="'.esc_url(admin_url('themes.php?theme='.rawurlencode($connection['theme_id']))).'">Lihat theme / Live Preview</a>. Pilih aktivasi melalui Appearance → Themes sebagai aksi manusia terpisah.</p>'; }
         echo '<p>Edit kode langsung pada child theme akan terganti saat update. Konten, Reading settings dan pilihan theme aktif dipertahankan. Recovery mengikuti WordPress/backup.</p></section>';
@@ -346,7 +354,7 @@ final class Dashboard {
     }
     public function action(): void {
         $op=sanitize_key(wp_unslash($_POST['operation']??''));
-        $caps=['save_page_design'=>'fwf_manage_system','setup_backup_storage'=>'fwf_manage_system','review_recovery'=>'fwf_manage_system','apply_recovery'=>'fwf_manage_system','save_backup_schedule'=>'fwf_manage_system','save_backup_retention'=>'fwf_manage_system','protect_backup'=>'fwf_manage_system','unprotect_backup'=>'fwf_manage_system','cancel_delete_backup'=>'fwf_manage_system','save_backup_note'=>'fwf_manage_system','review_delete_backup'=>'fwf_manage_system','delete_backup'=>'fwf_manage_system','resume_backup'=>'fwf_manage_system','cancel_backup'=>'fwf_manage_system','create_backup'=>'fwf_manage_system','review_backup'=>'fwf_manage_system','restore_backup'=>'fwf_manage_system','import_backup'=>'fwf_manage_system','download_backup'=>'fwf_manage_system','save_seo'=>'fwf_manage_system','save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_project'=>'fwf_manage_connections','disconnect_project'=>'fwf_manage_connections','check_project'=>'fwf_manage_updates','apply_project'=>'fwf_manage_updates','save_design'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','add_oauth_client'=>'fwf_manage_ai','remove_oauth_client'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
+        $caps=['review_blueprint'=>'fwf_manage_system','apply_blueprint'=>'fwf_manage_system','save_page_design'=>'fwf_manage_system','setup_backup_storage'=>'fwf_manage_system','review_recovery'=>'fwf_manage_system','apply_recovery'=>'fwf_manage_system','save_backup_schedule'=>'fwf_manage_system','save_backup_retention'=>'fwf_manage_system','protect_backup'=>'fwf_manage_system','unprotect_backup'=>'fwf_manage_system','cancel_delete_backup'=>'fwf_manage_system','save_backup_note'=>'fwf_manage_system','review_delete_backup'=>'fwf_manage_system','delete_backup'=>'fwf_manage_system','resume_backup'=>'fwf_manage_system','cancel_backup'=>'fwf_manage_system','create_backup'=>'fwf_manage_system','review_backup'=>'fwf_manage_system','restore_backup'=>'fwf_manage_system','import_backup'=>'fwf_manage_system','download_backup'=>'fwf_manage_system','save_seo'=>'fwf_manage_system','save_repo'=>'fwf_manage_connections','check_updates'=>'fwf_manage_updates','apply_update'=>'fwf_manage_updates','install_theme'=>'fwf_manage_system','activate_theme'=>'fwf_manage_system','skip_setup'=>'fwf_manage_system','save_project'=>'fwf_manage_connections','disconnect_project'=>'fwf_manage_connections','check_project'=>'fwf_manage_updates','apply_project'=>'fwf_manage_updates','save_design'=>'fwf_manage_system','save_identity'=>'fwf_manage_system','save_modules'=>'fwf_manage_modules','save_maintenance'=>'fwf_manage_system','save_outbound'=>'fwf_manage_ai','disconnect_outbound'=>'fwf_manage_ai','suggest'=>'fwf_manage_ai','apply_proposal'=>'fwf_manage_ai','add_oauth_client'=>'fwf_manage_ai','remove_oauth_client'=>'fwf_manage_ai','grant_agent'=>'fwf_manage_ai','revoke_agent'=>'fwf_manage_ai'];
         if (!isset($caps[$op]) || !current_user_can($caps[$op])) { Logger::write('admin_denied','FWF_PERMISSION'); wp_die('Tidak diizinkan.', '', ['response'=>403]); }
         check_admin_referer('fwf_'.$op);
         $p=wp_unslash($_POST); $result=true; $proposal='';
@@ -385,17 +393,19 @@ final class Dashboard {
                 case 'download_backup':
                     $result=\FalconWF\Backup\Manager::path($p['backup_id']??null);
                     if (!is_wp_error($result)) { if(get_transient('fwf_backup_download_'.get_current_user_id())===($p['backup_id']??null)){delete_transient('fwf_backup_download_'.get_current_user_id());}nocache_headers();header('Content-Type: application/zip');header('X-Content-Type-Options: nosniff');header('Content-Disposition: attachment; filename="falcon-backup-'.basename($result).'"');header('Content-Length: '.filesize($result));readfile($result);exit; }break;
-                case 'save_project': $result=ProjectManager::save(['repo'=>$p['project_repo']??null,'project_id'=>$p['project_id']??null,'theme_id'=>$p['theme_id']??null,'tag'=>$p['project_tag']??null]); break;
-                case 'disconnect_project': delete_option('fwf_project_connection');delete_option('fwf_project_candidate'); break;
+                case 'save_project': $result=ProjectManager::save(['repo'=>$p['project_repo']??null,'project_id'=>$p['project_id']??null,'theme_id'=>$p['theme_id']??null,'tag'=>$p['project_tag']??'','channel'=>$p['project_channel']??'stable']); break;
+                case 'disconnect_project': delete_option('fwf_project_connection');delete_option('fwf_project_candidate');delete_option('fwf_update_observations'); break;
                 case 'check_project': $result=(new ProjectManager())->check(); break;
                 case 'apply_project': $result=(new ProjectManager())->apply(($p['backup']??'')==='yes'); break;
                 case 'save_repo':
-                    $result=\FalconWF\Updates\UpdateManager::saveConnection($p['repo']??null,$p['update_channel']??null); break;
+                    $result=\FalconWF\Updates\UpdateManager::saveConnection($p['repo']??null,$p['update_channel']??null,$p['update_tag']??''); break;
                 case 'check_updates': $result=(new \FalconWF\Updates\UpdateManager())->check(); break;
                 case 'apply_update': $result=(new \FalconWF\Updates\UpdateManager())->update(sanitize_key($p['package_id']??''),($p['backup']??'')==='yes'); break;
                 case 'install_theme': $result=(new ThemeInstaller(dirname($this->file)))->install(); break;
                 case 'activate_theme': $result=($p['confirm']??'')==='yes'?(new ThemeInstaller(dirname($this->file)))->activate():new \WP_Error('FWF_PERMISSION','Konfirmasi pergantian theme diperlukan.'); break;
                 case 'skip_setup': update_option('fwf_setup','skipped',false); break;
+                case 'review_blueprint': $result=\FalconWF\Content\Blueprint::review($p);delete_transient('fwf_blueprint_review_'.get_current_user_id());if(!is_wp_error($result)){set_transient('fwf_blueprint_review_'.get_current_user_id(),$result,10*MINUTE_IN_SECONDS);}break;
+                case 'apply_blueprint': $review=get_transient('fwf_blueprint_review_'.get_current_user_id());delete_transient('fwf_blueprint_review_'.get_current_user_id());$result=is_array($review) && is_string($p['review_token']??null) && hash_equals($review['token'],$p['review_token'])?\FalconWF\Content\Blueprint::apply($review,($p['confirm']??'')==='yes'):new \WP_Error('FWF_BLUEPRINT','Review kedaluwarsa atau tidak cocok. Review ulang.');break;
                 case 'save_page_design': $result=PageDesign::save($p['page_id']??null,$p['template']??null,$p['revision']??null,$p['confirm']??null); break;
                 case 'save_design': $result=Settings::saveDesign(($p['reset_design']??'')==='yes'?[]:($p['design']??null),$p['theme']??null,$p['revision']??null); break;
                 case 'save_seo': $result=Settings::saveSeo($p['seo_mode']??null,$p['revision']??null); break;

@@ -4,20 +4,20 @@ use FalconWF\Audit\Logger;
 use FalconWF\Packages\Lock;
 final class UpdateManager {
     public static function validateSelection(string $tag,bool $automatic=false): true|\WP_Error {
-        if ($tag==='') { return true; }
+        if ($tag==='' || preg_match('/^v?\d+\.\d+\.\d+$/D',$tag)) { return true; }
         if (!in_array(wp_get_environment_type(),['local','staging'],true)) { return new \WP_Error('FWF_PERMISSION','Prerelease hanya di environment local atau staging. Kosongkan tag untuk stable.'); }
         if ($tag==='*' && $automatic) { return true; }
         if (!preg_match('/^v?\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D',$tag)) { return new \WP_Error('FWF_VALIDATION','Tag prerelease harus seperti v0.1.0-alpha.3.'); }
         return true;
     }
     public static function validate(array $manifest, string $tag=''): array|\WP_Error {
-        $selection=self::validateSelection($tag);if(is_wp_error($selection)){return $selection;}
-        if (($manifest['schema']??0)!==1 || ($manifest['status']??'')!==($tag===''?'stable':'development') || ($manifest['dirty']??null)!==false || !is_string($manifest['source_commit']??null) || !preg_match('/^[a-f0-9]{40}$/D',$manifest['source_commit']) || !is_array($manifest['packages']??null) || !array_is_list($manifest['packages']) || ($tag!=='' && ($manifest['version']??null)!==preg_replace('/^v/','',$tag))) { return new \WP_Error('FWF_PACKAGE','Manifest harus cocok dengan jalur release dan berasal dari commit bersih.'); }
+        $selection=self::validateSelection($tag);if(is_wp_error($selection)){return $selection;}$trial=str_contains($tag,'-');
+        if (!is_string($manifest['version']??null) || !preg_match($trial?'/^\d+\.\d+\.\d+-(alpha|beta|rc)\.[1-9]\d*$/D':'/^\d+\.\d+\.\d+$/D',$manifest['version']) || ($manifest['schema']??0)!==1 || ($manifest['status']??'')!==($trial?'development':'stable') || ($manifest['dirty']??null)!==false || !is_string($manifest['source_commit']??null) || !preg_match('/^[a-f0-9]{40}$/D',$manifest['source_commit']) || !is_array($manifest['packages']??null) || !array_is_list($manifest['packages']) || ($tag!=='' && ($manifest['version']??null)!==preg_replace('/^v/','',$tag))) { return new \WP_Error('FWF_PACKAGE','Manifest harus cocok dengan jalur release dan berasal dari commit bersih.'); }
         $packages=[];
         foreach($manifest['packages'] as $p){
             if(!is_array($p) || !in_array($p['id']??'', ['falcon-wf','falcon-theme'],true) || isset($packages[$p['id']]) ||
               ($p['type']??'')!==($p['id']==='falcon-wf'?'plugin':'theme') ||
-              !is_string($p['version']??null) || !preg_match($tag===''?'/^\d+\.\d+\.\d+$/D':'/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.[1-9]\d*)?$/D',$p['version']) ||
+              !is_string($p['version']??null) || !preg_match(!$trial?'/^\d+\.\d+\.\d+$/D':'/^\d+\.\d+\.\d+(-(alpha|beta|rc)\.[1-9]\d*)?$/D',$p['version']) ||
               ($p['artifact']??'')!==$p['id'].'-'.$p['version'].'.zip' || !is_string($p['sha256']??null) || !preg_match('/^[a-f0-9]{64}$/D',$p['sha256'])){
               return new \WP_Error('FWF_PACKAGE','Package ID/type/version/hash tidak valid.');
             }
@@ -31,31 +31,37 @@ final class UpdateManager {
         // A previous trial tag becomes the automatic trial channel; no version entry is required.
         return (string)get_option('fwf_update_channel',get_option('fwf_update_tag','')===''?'stable':'testing');
     }
-    private static function selection(): string|\WP_Error {
+    public static function selection(): string|\WP_Error {
         $channel=self::channel();
-        if (!in_array($channel,['stable','testing'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih jalur Stabil atau Uji coba.'); }
-        $tag=$channel==='testing'?'*':'';$valid=self::validateSelection($tag,true);return is_wp_error($valid)?$valid:$tag;
+        if (!in_array($channel,['stable','testing','manual'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih jalur Stabil atau Uji coba.'); }
+        $tag=$channel==='manual'?(string)get_option('fwf_update_tag',''):($channel==='testing'?'*':'');if($channel==='manual' && $tag===''){return new \WP_Error('FWF_VALIDATION','Isi tag untuk jalur manual.');}$valid=self::validateSelection($tag,$channel==='testing');return is_wp_error($valid)?$valid:$tag;
     }
-    public static function saveConnection(mixed $repo,mixed $channel): true|\WP_Error {
+    public static function saveConnection(mixed $repo,mixed $channel,mixed $tag=''): true|\WP_Error {
         if(!current_user_can('fwf_manage_connections')){return new \WP_Error('FWF_PERMISSION','Tidak diizinkan mengubah koneksi.');}
         $repo=GitHubClient::normalizeRepo($repo);
-        if($repo==='' || !is_string($channel) || !in_array($channel,['stable','testing'],true)){return new \WP_Error('FWF_VALIDATION','Periksa alamat GitHub dan pilihan jalur pembaruan.');}
-        $valid=self::validateSelection($channel==='testing'?'*':'',true);if(is_wp_error($valid)){return $valid;}
-        update_option('fwf_repo',$repo,false);update_option('fwf_update_channel',$channel,false);delete_option('fwf_update_tag');delete_option('fwf_release_candidate');
-        if(get_option('fwf_repo')!==$repo || get_option('fwf_update_channel')!==$channel){return new \WP_Error('FWF_DB','Pengaturan belum berhasil disimpan. Coba lagi.');}return true;
+        if($repo==='' || !is_string($channel) || !in_array($channel,['stable','testing','manual'],true)){return new \WP_Error('FWF_VALIDATION','Periksa alamat GitHub dan pilihan jalur pembaruan.');}
+        $tag=$channel==='manual'?$tag:'';if(!is_string($tag) || ($channel==='manual' && $tag==='')){return new \WP_Error('FWF_VALIDATION','Isi tag rilis manual.');}$valid=self::validateSelection($channel==='testing'?'*':$tag,$channel==='testing');if(is_wp_error($valid)){return $valid;}
+        update_option('fwf_repo',$repo,false);update_option('fwf_update_channel',$channel,false);update_option('fwf_update_tag',$tag,false);delete_option('fwf_release_candidate');delete_option('fwf_update_observations');
+        if(get_option('fwf_repo')!==$repo || get_option('fwf_update_channel')!==$channel || get_option('fwf_update_tag')!==$tag){return new \WP_Error('FWF_DB','Pengaturan belum berhasil disimpan. Coba lagi.');}return true;
     }
     public static function installedVersion(string $id): string {
         if ($id==='falcon-wf') { require_once ABSPATH.'wp-admin/includes/plugin.php';return (string)(get_plugin_data(WP_PLUGIN_DIR.'/falcon-wf/falcon-wf.php',false,false)['Version']??''); }
         return $id==='falcon-theme'?(string)wp_get_theme('falcon-theme')->get('Version'):'';
     }
+    /** Read-only metadata discovery; does not create a human-reviewed candidate. */
+    public function discover(): array|\WP_Error {
+        $selection=self::selection();if(is_wp_error($selection)){return $selection;}
+        $release=(new GitHubClient(self::repo()))->release($selection);if(is_wp_error($release)){return $release;}
+        $tag=$selection===''?'':$release['tag'];$packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
+        if(preg_replace('/^v/','',$release['tag'])!==($release['manifest']['version']??null)){return new \WP_Error('FWF_PACKAGE','Versi manifest tidak cocok dengan tag release.');}
+        foreach($packages as $p){if(!isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Artifact release hilang.');}}
+        return [...$release,'repo'=>self::repo(),'selection_tag'=>$selection,'checked_at'=>time()];
+    }
     public function check(): array|\WP_Error {
         if(!current_user_can('fwf_manage_updates')){return new \WP_Error('FWF_PERMISSION','Tidak diizinkan cek update.');}
-        $repo=self::repo();$selection=self::selection();delete_option('fwf_release_candidate');if(is_wp_error($selection)){return $selection;}$release=(new GitHubClient($repo))->release($selection);
-        if(is_wp_error($release)){return $release;}
-        $tag=$selection==='*'?$release['tag']:'';$packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
-        foreach($packages as $p){if(!isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Artifact release hilang.');}}
-        $release['repo']=$repo;$release['selection_tag']=$selection;$release['checked_at']=time(); update_option('fwf_release_candidate',$release,false);if(get_option('fwf_release_candidate')!==$release){delete_option('fwf_release_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
-        Logger::write('release_check','succeeded');return $packages;
+        delete_option('fwf_release_candidate');$release=$this->discover();if(is_wp_error($release)){return $release;}
+        update_option('fwf_release_candidate',$release,false);if(get_option('fwf_release_candidate')!==$release){delete_option('fwf_release_candidate');return new \WP_Error('FWF_DB','Hasil pemeriksaan gagal disimpan.');}
+        Logger::write('release_check','succeeded');return array_column($release['manifest']['packages'],null,'id');
     }
     public function update(string $id, bool $backupConfirmed): true|\WP_Error {
         $cap=$id==='falcon-wf'?'update_plugins':'update_themes';
@@ -67,9 +73,8 @@ final class UpdateManager {
         $owner=Lock::acquire('updates');if(is_wp_error($owner)){return $owner;}$tmp=null;
         try {
             // Refetch trusted metadata at apply time; do not trust stale client/option input.
-            $selection=self::selection();if(is_wp_error($selection)){return $selection;}$release=(new GitHubClient(self::repo()))->release($selection);if(is_wp_error($release)){return $release;}
-            $tag=$selection==='*'?$release['tag']:'';$packages=self::validate($release['manifest'],$tag);if(is_wp_error($packages)){return $packages;}
-            $p=$packages[$id]??null;if(!$p || !isset($release['assets'][$p['artifact']])){return new \WP_Error('FWF_PACKAGE','Target package tidak tersedia.');}
+            $release=$this->discover();if(is_wp_error($release)){return $release;}$selection=$release['selection_tag'];
+            $tag=$selection===''?'':$release['tag'];$packages=array_column($release['manifest']['packages'],null,'id');$p=$packages[$id]??null;if(!$p){return new \WP_Error('FWF_PACKAGE','Target package tidak tersedia.');}
             $candidate=get_option('fwf_release_candidate',[]);
             $reviewed=self::validate(is_array($candidate['manifest']??null)?$candidate['manifest']:[],$tag);
             if(($candidate['repo']??null)!==self::repo() || ($candidate['selection_tag']??null)!==$selection || is_wp_error($reviewed) || ($reviewed[$id]??null)!==$p || ($candidate['tag']??null)!==$release['tag']){return new \WP_Error('FWF_COMPATIBILITY','Release berubah atau belum diperiksa. Periksa ulang dan review versi sebelum update.');}

@@ -376,5 +376,26 @@
     "path": "resources/project-runtime.json",
     "loaded_by": "scripts/build-project.mjs / Packages/Verifier::remote child theme",
     "proof": "tests/project-build.test.mjs; tests/project-update.php; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Content/Blueprint.php",
+    "package": "plugin",
+    "path": "src/Content/Blueprint.php",
+    "loaded_by": "Dashboard pages review/apply / project Verifier",
+    "proof": "tests/blueprint.php; tests/blueprint-http.test.mjs; tests/build.test.mjs"
+  },
+  {
+    "source": "packages/falcon-plugin/resources/project-blueprint.schema.json",
+    "package": "plugin",
+    "path": "resources/project-blueprint.schema.json",
+    "loaded_by": "build-project AJV / Blueprint WordPress JSON Schema validation",
+    "proof": "tests/project-build.test.mjs; tests/blueprint.php"
+  },
+  {
+    "source": "packages/falcon-plugin/src/Updates/Monitor.php",
+    "package": "plugin",
+    "path": "src/Updates/Monitor.php",
+    "loaded_by": "Bootstrap WP-Cron / admin notices; Lifecycle unschedule",
+    "proof": "tests/distribution.php; tests/build.test.mjs"
   }
 ]

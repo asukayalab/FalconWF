@@ -1,6 +1,6 @@
 # Kontrak paket proyek klien
 
-Status: contoh child theme generik lokal dan build terpisah tersedia di examples/projects/falcon-reference. Alpha.5 menyediakan koneksi/check/instal/update satu child theme lewat release proyek; transport GitHub masih diuji fixture, belum live acceptance. Tidak menambah repo klien atau koneksi production tanpa owner/target.
+Status: contoh child theme generik lokal dan build terpisah tersedia di examples/projects/falcon-reference. Alpha.5 menyediakan koneksi/check/instal/update satu child theme lewat release proyek; alpha.23 membuktikan public GitHub trial → WordPress lokal; hosting/private/klien tetap acceptance terpisah. Tidak menambah repo klien atau koneksi production tanpa owner/target.
 
 ## Pemisahan
 
@@ -59,3 +59,7 @@ Ekstensi case-sensitive lowercase: teks php/css/js/mjs/svg; biner png/jpg/jpeg/g
 Manifest/project.json bukan runtime yang bisa dieksekusi, dan tidak mengaktifkan importer blueprint. Check memvalidasi manifest, compatibility, identitas dan keberadaan asset rilis; ZIP belum diunduh. Apply refetch/review, download, checksum dan verifikasi ZIP terjadi sebelum write. UI dan tes harus mempertahankan pembedaan itu.
 
 Error manifest memisahkan schema, project ID, dirty checkout, source commit, status/kanal, versi/tag, jumlah paket, slug/type/parent, versi/nama artifact dan SHA-256. Guard provenance tidak dilonggarkan. Build ulang dari checkout bersih dan terbitkan versi baru; jangan mengganti aset release published. Acceptance GitHub/hosting nyata tetap terpisah dari tes fixture.
+
+## Distribusi alpha.23
+
+Kontrak kanal, discovery identitas, cek berkala dan automation kini ada di DISTRIBUTION.md. Koneksi lama tanpa channel mempertahankan tag explicit; koneksi baru dapat mencari identitas dari manifest. Public repo generik asukayalab/falcon-wf-project-trial membuktikan dua rilis Actions dan instal/update WordPress lokal, terpisah dari core/portfolio. Bukti rinci ada di EVIDENCE.md.

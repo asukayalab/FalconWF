@@ -12,7 +12,7 @@ final class Manager {
     private static function site(): string { return hash_hmac('sha256',home_url('/'),wp_salt('auth')); }
     private static function roots(): array { return ['media'=>wp_get_upload_dir()['basedir'],'plugins'=>WP_PLUGIN_DIR,'themes'=>get_theme_root()]; }
     private static function setting(string $key): bool {
-        return in_array($key,['blogname','blogdescription','blog_public','show_on_front','page_on_front','page_for_posts','fwf_identity','fwf_builder','fwf_modules','fwf_seo'],true) || (bool)preg_match('/^fwf_design_[a-z0-9_-]+$/D',$key);
+        return in_array($key,['blogname','blogdescription','blog_public','show_on_front','page_on_front','page_for_posts','fwf_identity','fwf_builder','fwf_field_contracts','fwf_blueprints','fwf_modules','fwf_seo'],true) || (bool)preg_match('/^fwf_design_[a-z0-9_-]+$/D',$key);
     }
     private static function volatile(string $key): bool {
         return str_starts_with($key,'_transient_') || str_starts_with($key,'_site_transient_') || str_starts_with($key,'fwf_lock_') || str_starts_with($key,'fwf_backup_') || str_starts_with($key,'fwf_oauth_') || str_starts_with($key,'fwf_agent_') || str_starts_with($key,'fwf_operation_') || str_starts_with($key,'fwf_request_') || str_starts_with($key,'fwf_test_') || str_ends_with($key,'user_roles') || str_starts_with($key,'fwf_proposal_') || str_starts_with($key,'fwf_rate_') || in_array($key,['active_plugins','stylesheet','template','current_theme','theme_switched','home','siteurl','cron','rewrite_rules','fwf_outbound','fwf_ai_budget','fwf_repo','fwf_update_tag','fwf_update_channel','fwf_setup','fwf_agent_scopes','fwf_project_connection','fwf_project_candidate','fwf_release_candidate'],true);

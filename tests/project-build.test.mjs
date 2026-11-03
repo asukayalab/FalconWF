@@ -54,3 +54,17 @@ test('project contract requires entrypoints and preserves binary assets exactly'
   spec.runtime=spec.runtime.filter(x=>x!=='assets//motion.js');rmSync(path.join(source,'assets/font.woff2'));symlinkSync(path.join(source,'assets/picture.png'),path.join(source,'assets/font.woff2'));save();assert.notEqual(run().status,0,'asset symlink refused');
  }finally{rmSync(temp,{recursive:true,force:true});}
 });
+
+test('blueprint project is schema validated and bound to its package identity and requirements',()=>{
+ const temp=mkdtempSync(path.join(tmpdir(),'fwf-blueprint-'));
+ try{
+  const source=path.join(temp,'source'),output=path.join(temp,'output');cpSync('examples/projects/falcon-blueprint-reference',source,{recursive:true});
+  const run=()=>spawnSync(process.execPath,['scripts/build-project.mjs','--source',source,'--output',output],{encoding:'utf8'});
+  let r=run();assert.equal(r.status,0,r.stderr);const manifest=JSON.parse(readFileSync(path.join(output,'project-manifest.json')));assert.equal(manifest.packages[0].blueprint.file,'falcon-blueprint.json');assert.equal(manifest.packages[0].blueprint.project_id,manifest.project_id);
+  const docPath=path.join(source,'falcon-blueprint.json'),doc=JSON.parse(readFileSync(docPath));doc.options={untrusted:'not allowed'};writeFileSync(docPath,JSON.stringify(doc));assert.notEqual(run().status,0,'arbitrary settings prohibited by schema');delete doc.options;
+  doc.pages.push({...doc.pages[0]});writeFileSync(docPath,JSON.stringify(doc));assert.notEqual(run().status,0,'duplicate roles refused');doc.pages.pop();
+  doc.project_id='wrong-project';writeFileSync(docPath,JSON.stringify(doc));assert.notEqual(run().status,0,'blueprint identity bound to source');doc.project_id=manifest.project_id;writeFileSync(docPath,JSON.stringify(doc));
+  const group=Object.values(doc.definitions.groups)[0],roles=group.page_roles;delete group.page_roles;writeFileSync(docPath,JSON.stringify(doc));assert.notEqual(run().status,0,'Page group cannot apply globally without roles');group.page_roles=roles;writeFileSync(docPath,JSON.stringify(doc));
+  const specPath=path.join(source,'project.json'),spec=JSON.parse(readFileSync(specPath));spec.compatibility['falcon-wf'].min='0.1.0-alpha.21';writeFileSync(specPath,JSON.stringify(spec));assert.notEqual(run().status,0,'old FP minimum cannot claim blueprint support');
+ }finally{rmSync(temp,{recursive:true,force:true});}
+});

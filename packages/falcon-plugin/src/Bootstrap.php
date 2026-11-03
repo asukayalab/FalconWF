@@ -17,6 +17,7 @@ final class Bootstrap {
         (new Admin\Dashboard($file, $this))->register();
         (new Admin\Builder($file))->register();
         (new Content\Listing())->register();
+        Updates\Monitor::register();
         Backup\Manager::register();
         Backup\Scheduler::register();
         add_action('fwf_daily_cleanup', [AI\RequestGuard::class, 'cleanup']);

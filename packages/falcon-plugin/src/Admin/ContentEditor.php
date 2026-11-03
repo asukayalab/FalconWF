@@ -33,7 +33,7 @@ final class ContentEditor {
         $object=$this->content->get($id);
         if ($native && is_wp_error($object) && ($post=get_post($id))) { $object=['type'=>$post->post_type,'fields'=>['title'=>$post->post_title]+Schema::values($id,$post->post_type),'revision'=>'']; }
         if (is_wp_error($object) || !current_user_can('edit_post',$id)) { echo '<div class="notice notice-error"><p>Konten tidak tersedia atau tidak diizinkan.</p></div>'; return; }
-        $defs=Schema::custom($object['type']);
+        $defs=Schema::custom($object['type'],$id);
         if (!$defs) { echo '<p>Jenis ini belum memiliki custom field.</p>'; return; }
         wp_nonce_field('fwf_native_fields_'.$id,'fwf_fields_nonce');
         echo '<input type="hidden" name="fwf_meta_revision" value="'.esc_attr(Repository::metadataRevision($id,$object['type'])).'"><input type="hidden" name="fwf_content_revision" value="'.esc_attr(Repository::nativeRevision($id)).'">';
@@ -69,10 +69,10 @@ final class ContentEditor {
         }
         if ($native) { echo '<p class="description">Field dan konten diperiksa sebelum Save/Update. Jika field tidak valid atau revisi berubah, penyimpanan ditolak. Jenis dengan field Falcon memakai editor klasik.</p>'; }
     }
-    private function formFields(string $type): array|\WP_Error {
+    private function formFields(string $type,int $id): array|\WP_Error {
         $fields=wp_unslash($_POST['fields']??null);
         if (!is_array($fields)) { return new \WP_Error('FWF_VALIDATION','Payload field tidak valid.'); }
-        foreach (Schema::custom($type) as $key=>$definition) {
+        foreach (Schema::custom($type,$id) as $key=>$definition) {
             if (isset($fields[$key]) && in_array($definition['kind'],['integer','image','relationship'],true) && is_string($fields[$key]) && preg_match('/^\d+$/D',$fields[$key])) { $fields[$key]=(int)$fields[$key]; }
         }
         return $fields;
@@ -82,7 +82,7 @@ final class ContentEditor {
         if (!$post || !current_user_can('edit_post',$id) || in_array('fwf_agent',(array)wp_get_current_user()->roles,true)) { return new \WP_Error('FWF_PERMISSION','Tidak diizinkan.'); }
         $nonce=$_POST['fwf_fields_nonce']??null;
         if (!is_string($nonce) || !wp_verify_nonce(wp_unslash($nonce),'fwf_native_fields_'.$id)) { return new \WP_Error('FWF_PERMISSION','Nonce field tidak valid. Muat ulang editor.'); }
-        $fields=$this->formFields($post->post_type); if (is_wp_error($fields)) { return $fields; }
+        $fields=$this->formFields($post->post_type,$id); if (is_wp_error($fields)) { return $fields; }
         $meta=$_POST['fwf_meta_revision']??null; $native=$_POST['fwf_content_revision']??null;
         if (!is_string($meta) || !is_string($native)) { return new \WP_Error('FWF_CONFLICT','Revisi form tidak tersedia. Muat ulang editor.'); }
         return $this->content->prepareNative($id,wp_unslash($meta),wp_unslash($native),$fields);
@@ -100,7 +100,7 @@ final class ContentEditor {
         if (isset($_POST['deletepost'])) { return; }
         if (!in_array($action,['editpost','postajaxpost'],true) || !isset($_POST['post_ID']) || !is_scalar($_POST['post_ID'])) { return; }
         $id=absint($_POST['post_ID']); $post=get_post($id);
-        if (!$post || !Schema::custom($post->post_type)) { return; }
+        if (!$post || !Schema::custom($post->post_type,$id)) { return; }
         $nonce=$_POST['_wpnonce']??null;
         if (!is_string($nonce) || !wp_verify_nonce(wp_unslash($nonce),'update-post_'.$id)) { $this->refuse(new \WP_Error('FWF_PERMISSION','Nonce WordPress tidak valid.'),true); }
         $result=$this->prepareForm($id);

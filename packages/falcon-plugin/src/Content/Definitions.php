@@ -15,15 +15,41 @@ final class Definitions {
     public static function all(): array { return (array)get_option('fwf_builder',['types'=>[],'groups'=>[],'taxonomies'=>[]]); }
     public static function revision(): string { return hash('sha256',wp_json_encode(self::all())); }
     public static function types(): array { return array_merge(['post','page'],array_keys(self::all()['types'])); }
-    public static function fields(string $type): array {
-        $fields=[]; foreach (self::all()['groups'] as $g) { if ($g['active'] && in_array($type,$g['types'],true)) { $fields+=$g['fields']; } } return $fields;
+    public static function fields(string $type,?int $id=null): array {
+        $fields=[]; foreach (self::all()['groups'] as $g) { if ($g['active'] && in_array($type,$g['types'],true) && ($id===null || empty($g['pages']) || in_array($id,$g['pages'],true))) { $fields+=$g['fields']; } } return $fields;
     }
     public static function save(string $section,string $key,array $input,string $revision): true|\WP_Error {
-        if (!in_array($section,['types','groups','taxonomies'],true) || !preg_match('/^[a-z][a-z0-9_]{1,31}$/D',$key)) { return new \WP_Error('FWF_VALIDATION','Key definisi tidak valid.'); }
-        $owner=Lock::acquire('builder'); if (is_wp_error($owner)) { return $owner; }
-        try {
-            if (!hash_equals(self::revision(),$revision)) { return new \WP_Error('FWF_CONFLICT','Definisi telah berubah. Muat ulang sebelum menyimpan.'); }
-            $all=self::all(); $old=$all[$section][$key]??null;
+        $plan=self::plan([['section'=>$section,'key'=>$key,'input'=>$input]],$revision);
+        return is_wp_error($plan)?$plan:self::applyPlan($plan);
+    }
+    public static function plan(array $changes,string $revision): array|\WP_Error {
+        if(!hash_equals(self::revision(),$revision)){return new \WP_Error('FWF_CONFLICT','Definisi berubah. Muat ulang review.');}
+        $all=self::all();$contracts=(array)get_option('fwf_field_contracts',[]);$before=$contracts;
+        foreach($changes as $change){
+            $section=$change['section']??'';$key=$change['key']??'';$input=$change['input']??null;
+            if(!in_array($section,['types','groups','taxonomies'],true) || !is_string($key) || !preg_match('/^[a-z][a-z0-9_]{1,31}$/D',$key) || !is_array($input)){return new \WP_Error('FWF_VALIDATION','Key definisi tidak valid.');}
+            $d=self::normalise($section,$key,$input,$all,$contracts);if(is_wp_error($d)){return $d;}$all[$section][$key]=$d;
+        }
+        return ['revision'=>$revision,'contracts_before'=>$before,'all'=>$all,'contracts'=>$contracts];
+    }
+    public static function applyPlan(array $plan): true|\WP_Error {
+        $owner=Lock::acquire('builder');if(is_wp_error($owner)){return $owner;}
+        try{
+            if(!hash_equals(self::revision(),$plan['revision']) || (array)get_option('fwf_field_contracts',[])!==$plan['contracts_before']){return new \WP_Error('FWF_CONFLICT','Definisi berubah. Muat ulang review.');}
+            $old=self::all();$oldContracts=(array)get_option('fwf_field_contracts',[]);
+            if($old===$plan['all'] && $oldContracts===$plan['contracts']){return true;}
+            update_option('fwf_field_contracts',$plan['contracts'],false);
+            if((array)get_option('fwf_field_contracts',[])!==$plan['contracts']){return new \WP_Error('FWF_INTERNAL','Kontrak field gagal disimpan.');}
+            update_option('fwf_builder',$plan['all'],false);
+            if(self::all()!==$plan['all']){update_option('fwf_field_contracts',$oldContracts,false);return new \WP_Error('FWF_INTERNAL','Definisi gagal disimpan. Periksa hasil sebelum mencoba lagi.');}
+            if(($old['types']['fwf_project']??null)!==($plan['all']['types']['fwf_project']??null)){
+                $modules=(array)get_option('fwf_modules',[]);$modules=array_values(array_diff($modules,['projects']));if(!empty($plan['all']['types']['fwf_project']['active'])){$modules[]='projects';}update_option('fwf_modules',$modules,false);
+            }
+            update_option('fwf_rewrite_pending',true,false);return true;
+        }finally{Lock::release('builder',$owner);}
+    }
+    private static function normalise(string $section,string $key,array $input,array $all,array &$contracts): array|\WP_Error {
+        $old=$all[$section][$key]??null;
             $label=sanitize_text_field($input['label']??'');
             if (!$label || strlen($label)>100) { return new \WP_Error('FWF_VALIDATION','Nama wajib diisi, maksimal 100 karakter.'); }
             $d=['label'=>$label,'active'=>!empty($input['active'])];
@@ -38,14 +64,16 @@ final class Definitions {
                 $d['model']=$input['model']??''; if (!in_array($d['model'],['post','page'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih model Posts atau Pages.'); }
             } else {
                 $d['types']=array_values(array_unique((array)($input['types']??[])));
-                if (!$d['types'] || count(array_filter($d['types'],'is_string'))!==count($d['types']) || array_diff($d['types'],self::types())) { return new \WP_Error('FWF_VALIDATION','Pilih lokasi jenis konten yang tersedia.'); }
+                if (!$d['types'] || count(array_filter($d['types'],'is_string'))!==count($d['types']) || array_diff($d['types'],array_merge(['post','page'],array_keys($all['types'])))) { return new \WP_Error('FWF_VALIDATION','Pilih lokasi jenis konten yang tersedia.'); }
                 if ($section==='taxonomies') {
                     if (!preg_match('/^fwf_[a-z0-9_]{1,28}$/D',$key) || (!$old && taxonomy_exists($key))) { return new \WP_Error('FWF_VALIDATION','Key taksonomi bentrok; gunakan awalan fwf_.'); }
                     $d['model']=$input['model']??''; if (!in_array($d['model'],['category','tag'],true)) { return new \WP_Error('FWF_VALIDATION','Pilih kategori atau tag.'); }
                 } else {
+                    $pages=$input['pages']??($old['pages']??[]);
+                    if(!is_array($pages) || count($pages)>100 || count(array_filter($pages,static fn($id)=>is_int($id) && $id>0 && get_post_type($id)==='page' && !in_array(get_post_status($id),['trash','auto-draft'],true)))!==count($pages) || ($pages && $d['types']!==['page'])){return new \WP_Error('FWF_VALIDATION','Lokasi Page untuk kelompok field tidak valid.');}
+                    if($pages){$d['pages']=array_values(array_unique($pages));sort($d['pages']);}
                     $d['fields']=[]; $rows=$input['fields']??[];
                     if (!is_array($rows) || count($rows)>100) { return new \WP_Error('FWF_VALIDATION','Maksimal 100 field per kelompok.'); }
-                    $contracts=(array)get_option('fwf_field_contracts',[]);
                     foreach ($rows as $row) {
                         if (!is_array($row)) { return new \WP_Error('FWF_VALIDATION','Field tidak valid.'); }
                         $fkey=$row['key']??''; $kind=$row['kind']??''; $flabel=sanitize_text_field($row['label']??'');
@@ -63,7 +91,7 @@ final class Definitions {
                             }
                             if (!$f['choices'] || !isset($f['choices'][$f['default']])) { return new \WP_Error('FWF_VALIDATION','Nilai awal select harus salah satu pilihan.'); }
                         }
-                        if ($kind==='relationship') { $f['target']=$row['target']??''; if (!in_array($f['target'],self::types(),true)) { return new \WP_Error('FWF_VALIDATION','Target relasi tidak tersedia.'); } }
+                        if ($kind==='relationship') { $f['target']=$row['target']??''; if (!in_array($f['target'],array_merge(['post','page'],array_keys($all['types'])),true)) { return new \WP_Error('FWF_VALIDATION','Target relasi tidak tersedia.'); } }
                         foreach ($all['groups'] as $other) { foreach ($other['fields'] as $okey=>$of) { if ($okey===$fkey) { $contracts[$fkey]=[$of['kind'],$of['target']??'']; } } }
                         $contract=[$kind,$f['target']??''];
                         if (isset($contracts[$fkey]) && $contracts[$fkey]!==$contract) { return new \WP_Error('FWF_VALIDATION','Tipe/target key tersimpan tidak boleh berubah. Gunakan key baru.'); }
@@ -72,13 +100,8 @@ final class Definitions {
                     }
                     // Validate defaults through the same value validator, without required checks.
                     foreach ($d['fields'] as $fkey=>$f) { $valid=Schema::validateCustom($fkey,$f['default'],$f,false); if (is_wp_error($valid)) { return $valid; } }
-                    update_option('fwf_field_contracts',$contracts,false);
                 }
             }
-            $all[$section][$key]=$d; update_option('fwf_builder',$all,false);
-            if (self::all()!==$all) { return new \WP_Error('FWF_INTERNAL','Definisi gagal disimpan.'); }
-            if ($section==='types' && $key==='fwf_project') { $modules=(array)get_option('fwf_modules',[]); $modules=array_values(array_diff($modules,['projects'])); if ($d['active']) { $modules[]='projects'; } update_option('fwf_modules',$modules,false); }
-            update_option('fwf_rewrite_pending',true,false); return true;
-        } finally { Lock::release('builder',$owner); }
+        return $d;
     }
 }
